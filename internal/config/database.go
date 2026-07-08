@@ -19,10 +19,10 @@ type DBContainer struct {
 // ConnectPostgres establishes an optimized connection pool based on environment variables
 func ConnectPostgres() (*DBContainer, error) {
 	// 1. Collect connection details dynamically from environment variables
-	host := getEnv("DB_HOST", "localhost")
+	host := getEnv("DB_HOST", "127.0.0.1")
 	port := getEnv("DB_PORT", "5432")
 	user := getEnv("DB_USER", "postgres")
-	pass := getEnv("DB_PASSWORD", "password")
+	pass := getEnv("DB_PASSWORD", "postgres")
 	name := getEnv("DB_NAME", "campuscore")
 
 	// Construct the standard PostgreSQL connection string

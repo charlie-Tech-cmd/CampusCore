@@ -25,7 +25,10 @@ func main() {
 	log.Println("Starting CampusCore...")
 
 	// Connect to PostgreSQL.
-	connStr := "host=localhost port=5432 user=postgres password=postgres dbname=campuscore sslmode=disable"
+	
+	connStr := "host=127.0.0.1 port=5432 user=postgres password=postgres dbname=campuscore sslmode=disable"
+	
+	log.Println(connStr)
 
 	db, err := sql.Open("postgres", connStr)
 	if err != nil {
