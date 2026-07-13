@@ -25,9 +25,8 @@ func main() {
 	log.Println("Starting CampusCore...")
 
 	// Connect to PostgreSQL.
-	
 	connStr := "host=127.0.0.1 port=5432 user=postgres password=postgres dbname=campuscore sslmode=disable"
-	
+
 	log.Println(connStr)
 
 	db, err := sql.Open("postgres", connStr)
@@ -66,7 +65,7 @@ func main() {
 	paymentService := services.NewPaymentService(finRepo)
 	governanceService := governance.NewEngine(govRepo)
 
-	// Prevent unused variable errors until endpoints are added.
+	// Prevent unused variable error until endpoint is added.
 	_ = clearanceService
 
 	// Handlers.
@@ -78,67 +77,13 @@ func main() {
 	lecturerHandler := api.NewLecturerHandler(governanceService)
 	paymentHandler := api.NewPaymentHandler(paymentService)
 
-	// Router.
-	mux := http.NewServeMux()
-
-	// Authentication.
-	mux.HandleFunc("/api/v1/auth/login", authHandler.Login)
-	mux.HandleFunc("/api/v1/auth/logout", authHandler.Logout)
-
-	// Student routes.
-	mux.Handle(
-		"/api/v1/student/courses/register",
-		authMiddleware.Authenticate(
-			authMiddleware.RequireRole("student")(
-				http.HandlerFunc(studentHandler.RegisterCourse),
-			),
-		),
-	)
-
-	mux.Handle(
-		"/api/v1/student/support/tickets",
-		authMiddleware.Authenticate(
-			authMiddleware.RequireRole("student")(
-				http.HandlerFunc(studentHandler.SubmitTicket),
-			),
-		),
-	)
-
-	// Payment route.
-	mux.Handle(
-		"/api/v1/payments",
-		authMiddleware.Authenticate(
-			http.HandlerFunc(paymentHandler.VerifyPayment),
-		),
-	)
-
-	// Lecturer routes.
-	mux.Handle(
-		"/api/v1/faculty/results/advance",
-		authMiddleware.Authenticate(
-			authMiddleware.RequireRole(
-				"lecturer",
-				"HOD",
-				"dean",
-				"admin",
-			)(
-				http.HandlerFunc(lecturerHandler.AdvanceApproval),
-			),
-		),
-	)
-
-	mux.Handle(
-		"/api/v1/faculty/results/reject",
-		authMiddleware.Authenticate(
-			authMiddleware.RequireRole(
-				"lecturer",
-				"HOD",
-				"dean",
-				"admin",
-			)(
-				http.HandlerFunc(lecturerHandler.RejectApproval),
-			),
-		),
+	// Register all routes.
+	mux := registerRoutes(
+		authMiddleware,
+		authHandler,
+		studentHandler,
+		lecturerHandler,
+		paymentHandler,
 	)
 
 	server := &http.Server{
@@ -165,10 +110,7 @@ func main() {
 
 	log.Println("Shutting down...")
 
-	ctx, cancel := context.WithTimeout(
-		context.Background(),
-		5*time.Second,
-	)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	if err := server.Shutdown(ctx); err != nil {
