@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"database/sql"
 	"log"
 	"net/http"
 	"os"
@@ -17,32 +16,13 @@ import (
 	"campuscore/internal/notification"
 	"campuscore/internal/repository"
 	"campuscore/internal/services"
-
-	_ "github.com/lib/pq"
 )
 
 func main() {
 	log.Println("Starting CampusCore...")
 
-	// Connect to PostgreSQL.
-	connStr := "host=127.0.0.1 port=5432 user=postgres password=postgres dbname=campuscore sslmode=disable"
-
-	log.Println(connStr)
-
-	db, err := sql.Open("postgres", connStr)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	db.SetMaxOpenConns(25)
-	db.SetMaxIdleConns(10)
-	db.SetConnMaxLifetime(15 * time.Minute)
-
-	if err := db.Ping(); err != nil {
-		log.Fatal(err)
-	}
-
-	log.Println("Database connected.")
+	db := mustConnectDB()
+	defer db.Close()
 
 	// Start background worker.
 	worker := notification.NewWorker(100)
@@ -77,7 +57,7 @@ func main() {
 	lecturerHandler := api.NewLecturerHandler(governanceService)
 	paymentHandler := api.NewPaymentHandler(paymentService)
 
-	// Register all routes.
+	// Register routes.
 	mux := registerRoutes(
 		authMiddleware,
 		authHandler,
@@ -110,14 +90,13 @@ func main() {
 
 	log.Println("Shutting down...")
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(
+		context.Background(),
+		5*time.Second,
+	)
 	defer cancel()
 
 	if err := server.Shutdown(ctx); err != nil {
-		log.Println(err)
-	}
-
-	if err := db.Close(); err != nil {
 		log.Println(err)
 	}
 
