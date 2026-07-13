@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"log"
-	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
@@ -19,14 +18,7 @@ func main() {
 	server, worker := newServer(db)
 	defer worker.Stop(context.Background())
 
-	go func() {
-		log.Println("Server listening on http://localhost:8080")
-
-		if err := server.ListenAndServe(); err != nil &&
-			err != http.ErrServerClosed {
-			log.Fatal(err)
-		}
-	}()
+	startServer(server)
 
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
