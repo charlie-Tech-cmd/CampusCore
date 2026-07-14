@@ -1,5 +1,5 @@
 mode: set
-campuscore/internal/services/academic_service.go:16.54,18.2 1 0
+campuscore/internal/services/academic_service.go:16.54,18.2 1 1
 campuscore/internal/services/academic_service.go:21.118,24.16 2 0
 campuscore/internal/services/academic_service.go:24.16,26.3 1 0
 campuscore/internal/services/academic_service.go:27.2,33.16 5 0
@@ -28,13 +28,13 @@ campuscore/internal/services/academic_service.go:101.16,103.3 1 0
 campuscore/internal/services/academic_service.go:106.2,108.16 3 0
 campuscore/internal/services/academic_service.go:108.16,110.3 1 0
 campuscore/internal/services/academic_service.go:112.2,112.20 1 0
-campuscore/internal/services/academic_service.go:116.82,117.9 1 0
-campuscore/internal/services/academic_service.go:118.19,119.18 1 0
-campuscore/internal/services/academic_service.go:120.19,121.18 1 0
-campuscore/internal/services/academic_service.go:122.19,123.18 1 0
-campuscore/internal/services/academic_service.go:124.19,125.18 1 0
-campuscore/internal/services/academic_service.go:126.19,127.18 1 0
-campuscore/internal/services/academic_service.go:128.10,129.18 1 0
+campuscore/internal/services/academic_service.go:116.82,117.9 1 1
+campuscore/internal/services/academic_service.go:118.19,119.18 1 1
+campuscore/internal/services/academic_service.go:120.19,121.18 1 1
+campuscore/internal/services/academic_service.go:122.19,123.18 1 1
+campuscore/internal/services/academic_service.go:124.19,125.18 1 1
+campuscore/internal/services/academic_service.go:126.19,127.18 1 1
+campuscore/internal/services/academic_service.go:128.10,129.18 1 1
 campuscore/internal/services/clearance.go:16.77,20.2 1 1
 campuscore/internal/services/clearance.go:26.38,28.21 1 1
 campuscore/internal/services/clearance.go:28.21,30.3 1 1
