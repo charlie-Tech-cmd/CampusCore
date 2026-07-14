@@ -1,0 +1,22 @@
+mode: set
+campuscore/internal/auth/passwords.go:16.52,17.24 1 1
+campuscore/internal/auth/passwords.go:17.24,19.3 1 1
+campuscore/internal/auth/passwords.go:22.2,23.16 2 1
+campuscore/internal/auth/passwords.go:23.16,25.3 1 0
+campuscore/internal/auth/passwords.go:27.2,27.33 1 1
+campuscore/internal/auth/passwords.go:32.52,33.34 1 1
+campuscore/internal/auth/passwords.go:33.34,35.3 1 1
+campuscore/internal/auth/passwords.go:37.2,40.10 1 1
+campuscore/internal/auth/tokens.go:26.42,31.2 1 1
+campuscore/internal/auth/tokens.go:34.59,37.16 3 1
+campuscore/internal/auth/tokens.go:37.16,39.3 1 0
+campuscore/internal/auth/tokens.go:40.2,40.39 1 1
+campuscore/internal/auth/tokens.go:44.85,46.16 2 1
+campuscore/internal/auth/tokens.go:46.16,48.3 1 0
+campuscore/internal/auth/tokens.go:50.2,60.19 4 1
+campuscore/internal/auth/tokens.go:64.75,69.13 4 1
+campuscore/internal/auth/tokens.go:69.13,71.3 1 1
+campuscore/internal/auth/tokens.go:74.2,74.41 1 1
+campuscore/internal/auth/tokens.go:74.41,77.3 2 1
+campuscore/internal/auth/tokens.go:80.2,83.22 3 1
+campuscore/internal/auth/tokens.go:87.55,91.2 3 1
