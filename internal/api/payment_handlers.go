@@ -3,20 +3,18 @@ package api
 import (
 	"encoding/json"
 	"net/http"
-
-	"campuscore/internal/services"
 )
 
 // PaymentHandler handles payment requests.
 type PaymentHandler struct {
-	paymentService *services.PaymentService
+    paymentService PaymentService
 }
 
 // NewPaymentHandler creates a PaymentHandler.
-func NewPaymentHandler(paymentService *services.PaymentService) *PaymentHandler {
-	return &PaymentHandler{
-		paymentService: paymentService,
-	}
+func NewPaymentHandler(paymentService PaymentService) *PaymentHandler {
+    return &PaymentHandler{
+        paymentService: paymentService,
+    }
 }
 
 // PaymentRequest represents a payment request.

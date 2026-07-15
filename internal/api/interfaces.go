@@ -1,23 +1,28 @@
 package api
 
 import (
-    "context"
+	"context"
 
-    "campuscore/internal/models"
+	"campuscore/internal/models"
+
 )
 
+
 type AcademicService interface {
-    RegisterCourse(
-        studentID string,
-        courseCode string,
-        session string,
-        semester string,
-    ) error
+    RegisterCourse(studentID, courseCode, session, semester string) error
 }
 
 type TicketService interface {
-    SubmitHelpdeskTicket(
+    SubmitHelpdeskTicket(ctx context.Context, ticket *models.SupportTicket) error
+}
+
+type PaymentService interface {
+    ProcessPayment(
         ctx context.Context,
-        ticket *models.SupportTicket,
+        studentID,
+        reference string,
+        amount float64,
+        feeType,
+        session string,
     ) error
 }

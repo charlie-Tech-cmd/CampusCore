@@ -33,3 +33,37 @@ func (m *mockTicketService) SubmitHelpdeskTicket(
 	}
 	return nil
 }
+
+type mockPaymentService struct {
+    processPaymentFunc func(
+        context.Context,
+        string,
+        string,
+        float64,
+        string,
+        string,
+    ) error
+}
+
+func (m *mockPaymentService) ProcessPayment(
+    ctx context.Context,
+    studentID,
+    reference string,
+    amount float64,
+    feeType,
+    session string,
+) error {
+
+    if m.processPaymentFunc != nil {
+        return m.processPaymentFunc(
+            ctx,
+            studentID,
+            reference,
+            amount,
+            feeType,
+            session,
+        )
+    }
+
+    return nil
+}
