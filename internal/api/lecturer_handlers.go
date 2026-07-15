@@ -5,19 +5,21 @@ import (
 	"net/http"
 	
 	"campuscore/internal/auth"
-	"campuscore/internal/governance"
+	// "campuscore/internal/governance"
 	"campuscore/internal/middleware"
 	"campuscore/internal/models"
 )
 
 // LecturerHandler coordinates network delivery for grade processing and workflow changes
 type LecturerHandler struct {
-	govEngine *governance.Engine
+	govEngine GovernanceEngine
 }
 
 // NewLecturerHandler instantiates our lecturer endpoint controller
-func NewLecturerHandler(ge *governance.Engine) *LecturerHandler {
-	return &LecturerHandler{govEngine: ge}
+func NewLecturerHandler(ge GovernanceEngine) *LecturerHandler {
+	return &LecturerHandler{
+		govEngine: ge,
+	}
 }
 
 // WorkflowAdvanceRequest defines the expected JSON data layout to step a batch forward
