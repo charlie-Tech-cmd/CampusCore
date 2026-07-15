@@ -7,19 +7,18 @@ import (
 	"campuscore/internal/auth"
 	"campuscore/internal/middleware"
 	"campuscore/internal/models"
-	"campuscore/internal/services"
 )
 
 // StudentHandler handles student requests.
 type StudentHandler struct {
-	academicService *services.AcademicService
-	ticketService   *services.TicketService
+	academicService AcademicService
+	ticketService   TicketService
 }
 
 // NewStudentHandler creates a StudentHandler.
 func NewStudentHandler(
-	academicService *services.AcademicService,
-	ticketService *services.TicketService,
+	academicService AcademicService,
+	ticketService TicketService,
 ) *StudentHandler {
 	return &StudentHandler{
 		academicService: academicService,
@@ -78,13 +77,12 @@ func (h *StudentHandler) RegisterCourse(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	err := h.academicService.RegisterCourse(
+	if err := h.academicService.RegisterCourse(
 		session.UserID,
 		req.CourseCode,
 		req.Session,
 		req.Semester,
-	)
-	if err != nil {
+	); err != nil {
 		writeJSON(w, http.StatusUnprocessableEntity, map[string]string{
 			"error": err.Error(),
 		})
