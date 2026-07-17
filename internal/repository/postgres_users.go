@@ -1,10 +1,10 @@
 package repository
 
 import (
+	"campuscore/internal/models"
 	"database/sql"
 	"errors"
 	"fmt"
-	"campuscore/internal/models"
 )
 
 // PostgresUserRepository implements the models.UserRepository interface contract
@@ -23,16 +23,16 @@ func (r *PostgresUserRepository) Create(user *models.User) error {
 		INSERT INTO users (id, surname, first_name, middle_name, email, phone, password_hash, role, department_id, level)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10);`
 
-	_, err := r.db.Exec(query, 
-		user.ID, 
-		user.Surname, 
-		user.FirstName, 
-		user.MiddleName, 
-		user.Email, 
-		user.Phone, 
-		user.PasswordHash, 
-		user.Role, 
-		user.DepartmentID, 
+	_, err := r.db.Exec(query,
+		user.ID,
+		user.Surname,
+		user.FirstName,
+		user.MiddleName,
+		user.Email,
+		user.Phone,
+		user.PasswordHash,
+		user.Role,
+		user.DepartmentID,
 		user.Level,
 	)
 	if err != nil {

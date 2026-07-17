@@ -27,13 +27,13 @@ func ConnectPostgres(cfg config.DatabaseConfig) (*DBContainer, error) {
 		cfg.SSLMode,
 	)
 
-log.Printf(
-	"Connecting to PostgreSQL (host=%s port=%s database=%s sslmode=%s)",
-	cfg.Host,
-	cfg.Port,
-	cfg.Name,
-	cfg.SSLMode,
-)
+	log.Printf(
+		"Connecting to PostgreSQL (host=%s port=%s database=%s sslmode=%s)",
+		cfg.Host,
+		cfg.Port,
+		cfg.Name,
+		cfg.SSLMode,
+	)
 	pool, err := sql.Open("postgres", connStr)
 	if err != nil {
 		return nil, fmt.Errorf("opening database connection: %w", err)

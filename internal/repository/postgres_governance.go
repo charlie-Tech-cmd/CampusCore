@@ -1,11 +1,11 @@
 package repository
 
 import (
+	"campuscore/internal/models"
 	"database/sql"
 	"errors"
 	"fmt"
 	"time"
-	"campuscore/internal/models"
 )
 
 // PostgresGovernanceRepository implements the models.GovernanceRepository contract

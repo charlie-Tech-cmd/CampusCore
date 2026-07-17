@@ -16,8 +16,8 @@ type Task struct {
 
 // Worker manages our concurrent background notification engine
 type Worker struct {
-	queue      chan Task
-	wg         sync.WaitGroup
+	queue        chan Task
+	wg           sync.WaitGroup
 	shutdownChan chan struct{}
 }
 
@@ -69,8 +69,8 @@ func (w *Worker) Enqueue(task Task) bool {
 func (w *Worker) sendNotification(t Task) {
 	// Simulate minor network transport overhead delay safely (e.g., calling SendGrid/Twilio API)
 	time.Sleep(100 * time.Millisecond)
-	
-	log.Printf("📬 [ASYNC NOTIFICATION SENT] Target: %s | Type: %s | Details: %s", 
+
+	log.Printf("📬 [ASYNC NOTIFICATION SENT] Target: %s | Type: %s | Details: %s",
 		t.RecipientID, t.Type, t.Payload,
 	)
 }
@@ -78,7 +78,7 @@ func (w *Worker) sendNotification(t Task) {
 // Stop executes an orderly drainage and teardown cascade during application shutdown
 func (w *Worker) Stop(ctx context.Context) {
 	log.Println("⚠️ Initiating graceful shutdown sequence for the notification worker pool...")
-	
+
 	close(w.shutdownChan) // Signal loops to stop processing new inputs
 	close(w.queue)        // Close the task stream channel
 

@@ -14,7 +14,7 @@ type Client struct {
 
 // EventPayload defines the structured data layout transmitted to the frontend interface
 type EventPayload struct {
-	Type    string      `json:"type"`    // e.g., "result_approved", "payment_cleared", "ticket_update"
+	Type    string      `json:"type"` // e.g., "result_approved", "payment_cleared", "ticket_update"
 	Message string      `json:"message"`
 	Data    interface{} `json:"data,omitempty"`
 }
@@ -22,9 +22,9 @@ type EventPayload struct {
 // Hub orchestrates the stateful registration, removal, and routing of live WebSocket frames
 type Hub struct {
 	// Map of active connections tracking clients by their authenticated institutional UserID
-	clients    map[string][]*Client
-	clientsMu  sync.RWMutex
-	
+	clients   map[string][]*Client
+	clientsMu sync.RWMutex
+
 	// Inbound message channels to handle asynchronous event registrations safely
 	Register   chan *Client
 	Unregister chan *Client
@@ -50,7 +50,7 @@ func (h *Hub) Run() {
 			h.clientsMu.Lock()
 			h.clients[client.UserID] = append(h.clients[client.UserID], client)
 			h.clientsMu.Unlock()
-			log.Printf("🔌 Real-time client connected: User %s (Active profiles tracked: %d)", 
+			log.Printf("🔌 Real-time client connected: User %s (Active profiles tracked: %d)",
 				client.UserID, len(h.clients[client.UserID]),
 			)
 
@@ -64,7 +64,7 @@ func (h *Hub) Run() {
 						updatedConnections = append(updatedConnections, conn)
 					}
 				}
-				
+
 				if len(updatedConnections) == 0 {
 					delete(h.clients, client.UserID)
 				} else {

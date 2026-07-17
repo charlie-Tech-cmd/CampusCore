@@ -3,9 +3,9 @@ package repository
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"regexp"
 	"testing"
-	"errors"
 	"time"
 
 	"campuscore/internal/models"
@@ -1216,22 +1216,22 @@ func TestFindByID_ScanError(t *testing.T) {
                 LIMIT 1;`)
 
 	rows := sqlmock.NewRows([]string{
-	"id",
-	"surname",
-	"first_name",
-	"middle_name",
-	"email",
-	"phone",
-	"password_hash",
-	"role",
-	"department_id",
-	"level",
-	"last_login",
-	"created_at",
-}).AddRow(
-	"STU001",
-	"Doe",
-	"John",
+		"id",
+		"surname",
+		"first_name",
+		"middle_name",
+		"email",
+		"phone",
+		"password_hash",
+		"role",
+		"department_id",
+		"level",
+		"last_login",
+		"created_at",
+	}).AddRow(
+		"STU001",
+		"Doe",
+		"John",
 		"A",
 		"john@example.com",
 		"08012345678",
@@ -1241,7 +1241,7 @@ func TestFindByID_ScanError(t *testing.T) {
 		300,
 		time.Now(),
 		time.Now(),
-)
+	)
 
 	mock.ExpectQuery(query).
 		WithArgs("STU001").

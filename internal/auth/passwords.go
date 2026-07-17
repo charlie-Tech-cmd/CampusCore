@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	// DefaultCost sets our work factor workload balance. 
+	// DefaultCost sets our work factor workload balance.
 	// 10 offers high security on our ASUS VivoBook workspace while keeping performance crisp.
 	DefaultCost = 10
 )

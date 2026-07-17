@@ -21,7 +21,6 @@ func TestNewClearanceService(t *testing.T) {
 	}
 }
 
-
 func TestGetChecklistStatus_EmptyStudentID(t *testing.T) {
 	service := NewClearanceService(&mockFinancialRepository{})
 

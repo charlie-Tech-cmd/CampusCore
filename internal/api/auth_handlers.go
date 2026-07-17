@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"net/http"
 	"time"
-	
-	 "campuscore/internal/auth"
+
+	"campuscore/internal/auth"
 	"campuscore/internal/models"
 )
 
@@ -25,7 +25,7 @@ func NewAuthHandler(ur models.UserRepository, sm *auth.SessionManager) *AuthHand
 
 // LoginRequest defines the expected JSON payload incoming from the login form submission
 type LoginRequest struct {
-	ID       string `json:"id"`       // Matric Number or Staff ID
+	ID       string `json:"id"` // Matric Number or Staff ID
 	Password string `json:"password"`
 }
 
@@ -89,9 +89,9 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		Value:    token,
 		Path:     "/",
 		Expires:  time.Now().Add(5 * time.Minute), // Initial matching boundary tracking tag
-		HttpOnly: true,                             // Blocks browser XSS scripts from stealing tokens
-		Secure:   false,                            // Set to true in production context over HTTPS
-		SameSite: http.SameSiteStrictMode,          // Eliminates Cross-Site Request Forgery (CSRF) attacks
+		HttpOnly: true,                            // Blocks browser XSS scripts from stealing tokens
+		Secure:   false,                           // Set to true in production context over HTTPS
+		SameSite: http.SameSiteStrictMode,         // Eliminates Cross-Site Request Forgery (CSRF) attacks
 	})
 
 	// 8. Output a clean serialization response profile

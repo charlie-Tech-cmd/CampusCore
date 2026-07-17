@@ -2,29 +2,24 @@ package config
 
 import "time"
 
-// ServerConfig contains all HTTP server settings.
 type ServerConfig struct {
-	// Host is the network interface the server binds to.
-	// Example: "0.0.0.0" or "127.0.0.1"
 	Host string
-
-	// Port is the HTTP server port.
-	// Example: "8080"
 	Port string
 
-	// ReadTimeout is the maximum duration for reading
-	// the entire request, including the body.
-	ReadTimeout time.Duration
-
-	// WriteTimeout is the maximum duration before
-	// timing out writes of the response.
-	WriteTimeout time.Duration
-
-	// IdleTimeout is the maximum amount of time to wait
-	// for the next request when keep-alives are enabled.
-	IdleTimeout time.Duration
-
-	// ShutdownTimeout is the maximum amount of time the
-	// server is allowed to gracefully shut down.
+	ReadTimeout     time.Duration
+	WriteTimeout    time.Duration
+	IdleTimeout     time.Duration
 	ShutdownTimeout time.Duration
+}
+
+// loadServerConfig loads HTTP server configuration from the environment.
+func loadServerConfig() ServerConfig {
+	return ServerConfig{
+		Host:            getEnv("SERVER_HOST", "0.0.0.0"),
+		Port:            getEnv("SERVER_PORT", "8080"),
+		ReadTimeout:     getEnvAsDuration("SERVER_READ_TIMEOUT", "15s"),
+		WriteTimeout:    getEnvAsDuration("SERVER_WRITE_TIMEOUT", "15s"),
+		IdleTimeout:     getEnvAsDuration("SERVER_IDLE_TIMEOUT", "60s"),
+		ShutdownTimeout: getEnvAsDuration("SERVER_SHUTDOWN_TIMEOUT", "30s"),
+	}
 }

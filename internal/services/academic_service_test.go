@@ -2,8 +2,8 @@ package services
 
 import (
 	"database/sql"
-	"testing"
 	"errors"
+	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
 )
@@ -1047,18 +1047,18 @@ func TestRegisterCourse_PrerequisiteCheckError(t *testing.T) {
 				AddRow(12),
 		)
 
-// One prerequisite
-mock.ExpectQuery(`SELECT prerequisite_code FROM course_prerequisites`).
-    WithArgs("CS101").
-    WillReturnRows(
-        sqlmock.NewRows([]string{"prerequisite_code"}).
-            AddRow("CSC100"),
-    )
+	// One prerequisite
+	mock.ExpectQuery(`SELECT prerequisite_code FROM course_prerequisites`).
+		WithArgs("CS101").
+		WillReturnRows(
+			sqlmock.NewRows([]string{"prerequisite_code"}).
+				AddRow("CSC100"),
+		)
 
-// Force prerequisite lookup error
-mock.ExpectQuery(`SELECT EXISTS`).
-    WithArgs("STU001", "CSC100").
-    WillReturnError(errors.New("database error"))
+	// Force prerequisite lookup error
+	mock.ExpectQuery(`SELECT EXISTS`).
+		WithArgs("STU001", "CSC100").
+		WillReturnError(errors.New("database error"))
 	mock.ExpectRollback()
 
 	err = service.RegisterCourse(
@@ -1076,4 +1076,3 @@ mock.ExpectQuery(`SELECT EXISTS`).
 		t.Fatal(err)
 	}
 }
-

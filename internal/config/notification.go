@@ -26,3 +26,17 @@ type NotificationConfig struct {
 	// graceful shutdown.
 	ShutdownTimeout time.Duration
 }
+
+// loadNotificationConfig loads notification worker configuration from the environment.
+func loadNotificationConfig() NotificationConfig {
+	return NotificationConfig{
+		WorkerPoolSize: getEnvAsInt("WORKER_POOL_SIZE", 5),
+		QueueSize:      getEnvAsInt("NOTIFICATION_QUEUE_SIZE", 100),
+		MaxRetries:     getEnvAsInt("NOTIFICATION_MAX_RETRIES", 3),
+		RetryDelay:     getEnvAsDuration("NOTIFICATION_RETRY_DELAY", "5s"),
+		ShutdownTimeout: getEnvAsDuration(
+			"NOTIFICATION_SHUTDOWN_TIMEOUT",
+			"30s",
+		),
+	}
+}

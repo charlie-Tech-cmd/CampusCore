@@ -47,7 +47,6 @@ func TestProcessIncomingWebhook_Success(t *testing.T) {
 	}
 }
 
-
 func TestNewFinancialService(t *testing.T) {
 	repo := &mockFinancialRepository{}
 

@@ -1,10 +1,10 @@
 package middleware
 
 import (
-	"context"
-	"net/http"
 	"campuscore/internal/auth"
 	"campuscore/internal/models"
+	"context"
+	"net/http"
 )
 
 // contextKey defines a custom, unexported type to prevent namespace collisions in request context
@@ -48,7 +48,7 @@ func (ag *AuthGatekeeper) Authenticate(next http.Handler) http.Handler {
 
 		// 3. Inject the active session variables down into the request context container
 		ctx := context.WithValue(r.Context(), UserContextKey, session)
-		
+
 		// 4. Pass the authenticated request forward along the execution chain
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})

@@ -1,18 +1,17 @@
 package api
 
 import (
-    "errors"
-    "io"
-    "net/http"
-    "net/http/httptest"
-    "strings"
-    "testing"
 	"context"
+	"errors"
+	"io"
+	"net/http"
+	"net/http/httptest"
+	"strings"
+	"testing"
 
-
-    "campuscore/internal/auth"
-    "campuscore/internal/models"
+	"campuscore/internal/auth"
 	"campuscore/internal/middleware"
+	"campuscore/internal/models"
 )
 
 func TestNewAuthHandler(t *testing.T) {
@@ -113,13 +112,13 @@ func TestLogin_InvalidJSON(t *testing.T) {
 
 func TestLogin_UserNotFound(t *testing.T) {
 	repo := &mockUserRepository{
-    findByEmailFunc: func(string) (*models.User, error) {
-        return nil, errors.New("not found")
-    },
-    findByIDFunc: func(string) (*models.User, error) {
-        return nil, errors.New("not found")
-    },
-}
+		findByEmailFunc: func(string) (*models.User, error) {
+			return nil, errors.New("not found")
+		},
+		findByIDFunc: func(string) (*models.User, error) {
+			return nil, errors.New("not found")
+		},
+	}
 
 	sessionMgr := auth.NewSessionManager()
 
@@ -393,86 +392,86 @@ func TestLogout_WithoutSession(t *testing.T) {
 	}
 }
 func TestNewStudentHandler(t *testing.T) {
-    handler := NewStudentHandler(nil, nil)
+	handler := NewStudentHandler(nil, nil)
 
-    if handler == nil {
-        t.Fatal("expected handler")
-    }
+	if handler == nil {
+		t.Fatal("expected handler")
+	}
 
-    if handler.academicService != nil {
-        t.Fatal("expected nil academic service")
-    }
+	if handler.academicService != nil {
+		t.Fatal("expected nil academic service")
+	}
 
-    if handler.ticketService != nil {
-        t.Fatal("expected nil ticket service")
-    }
+	if handler.ticketService != nil {
+		t.Fatal("expected nil ticket service")
+	}
 }
 
 func TestWriteJSON(t *testing.T) {
-    rec := httptest.NewRecorder()
+	rec := httptest.NewRecorder()
 
-    payload := map[string]string{
-        "message": "ok",
-    }
+	payload := map[string]string{
+		"message": "ok",
+	}
 
-    writeJSON(rec, http.StatusCreated, payload)
+	writeJSON(rec, http.StatusCreated, payload)
 
-    res := rec.Result()
-    defer res.Body.Close()
+	res := rec.Result()
+	defer res.Body.Close()
 
-    if res.StatusCode != http.StatusCreated {
-        t.Fatalf("expected %d got %d",
-            http.StatusCreated,
-            res.StatusCode,
-        )
-    }
+	if res.StatusCode != http.StatusCreated {
+		t.Fatalf("expected %d got %d",
+			http.StatusCreated,
+			res.StatusCode,
+		)
+	}
 
-    if ct := res.Header.Get("Content-Type"); ct != "application/json" {
-        t.Fatalf("expected application/json got %s", ct)
-    }
+	if ct := res.Header.Get("Content-Type"); ct != "application/json" {
+		t.Fatalf("expected application/json got %s", ct)
+	}
 }
 
 func TestGetSession(t *testing.T) {
-    expected := &auth.Session{
-        UserID: "STU001",
-        Role:   "student",
-    }
+	expected := &auth.Session{
+		UserID: "STU001",
+		Role:   "student",
+	}
 
-    req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
 
-    ctx := context.WithValue(
-        req.Context(),
-        middleware.UserContextKey,
-        expected,
-    )
+	ctx := context.WithValue(
+		req.Context(),
+		middleware.UserContextKey,
+		expected,
+	)
 
-    req = req.WithContext(ctx)
+	req = req.WithContext(ctx)
 
-    session, ok := getSession(req)
+	session, ok := getSession(req)
 
-    if !ok {
-        t.Fatal("expected session")
-    }
+	if !ok {
+		t.Fatal("expected session")
+	}
 
-    if session.UserID != expected.UserID {
-        t.Fatal("unexpected user id")
-    }
+	if session.UserID != expected.UserID {
+		t.Fatal("unexpected user id")
+	}
 }
 
 func TestRegisterCourse_MethodNotAllowed(t *testing.T) {
-        handler := NewStudentHandler(nil, nil)
+	handler := NewStudentHandler(nil, nil)
 
-        req := httptest.NewRequest(http.MethodGet, "/student/register", nil)
-        rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/student/register", nil)
+	rec := httptest.NewRecorder()
 
-        handler.RegisterCourse(rec, req)
+	handler.RegisterCourse(rec, req)
 
-        if rec.Code != http.StatusMethodNotAllowed {
-                t.Fatalf("expected %d, got %d",
-                        http.StatusMethodNotAllowed,
-                        rec.Code,
-                )
-        }
+	if rec.Code != http.StatusMethodNotAllowed {
+		t.Fatalf("expected %d, got %d",
+			http.StatusMethodNotAllowed,
+			rec.Code,
+		)
+	}
 }
 
 func TestRegisterCourse_Unauthorized(t *testing.T) {
@@ -627,154 +626,154 @@ func TestRegisterCourse_Success(t *testing.T) {
 }
 
 func TestSubmitTicket_MethodNotAllowed(t *testing.T) {
-    handler := NewStudentHandler(nil, &mockTicketService{})
+	handler := NewStudentHandler(nil, &mockTicketService{})
 
-    req := httptest.NewRequest(http.MethodGet, "/ticket", nil)
-    rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/ticket", nil)
+	rec := httptest.NewRecorder()
 
-    handler.SubmitTicket(rec, req)
+	handler.SubmitTicket(rec, req)
 
-    if rec.Code != http.StatusMethodNotAllowed {
-        t.Fatalf("expected %d got %d",
-            http.StatusMethodNotAllowed,
-            rec.Code)
-    }
+	if rec.Code != http.StatusMethodNotAllowed {
+		t.Fatalf("expected %d got %d",
+			http.StatusMethodNotAllowed,
+			rec.Code)
+	}
 }
 
 func TestSubmitTicket_Unauthorized(t *testing.T) {
-    handler := NewStudentHandler(nil, &mockTicketService{})
+	handler := NewStudentHandler(nil, &mockTicketService{})
 
-    req := httptest.NewRequest(http.MethodPost, "/ticket", nil)
-    rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodPost, "/ticket", nil)
+	rec := httptest.NewRecorder()
 
-    handler.SubmitTicket(rec, req)
+	handler.SubmitTicket(rec, req)
 
-    if rec.Code != http.StatusUnauthorized {
-        t.Fatalf("expected %d got %d",
-            http.StatusUnauthorized,
-            rec.Code)
-    }
+	if rec.Code != http.StatusUnauthorized {
+		t.Fatalf("expected %d got %d",
+			http.StatusUnauthorized,
+			rec.Code)
+	}
 }
 
 func TestSubmitTicket_InvalidJSON(t *testing.T) {
-    handler := NewStudentHandler(nil, &mockTicketService{})
+	handler := NewStudentHandler(nil, &mockTicketService{})
 
-    session := &auth.Session{
-        UserID: "STU001",
-    }
+	session := &auth.Session{
+		UserID: "STU001",
+	}
 
-    req := httptest.NewRequest(
-        http.MethodPost,
-        "/ticket",
-        strings.NewReader("{invalid"),
-    )
+	req := httptest.NewRequest(
+		http.MethodPost,
+		"/ticket",
+		strings.NewReader("{invalid"),
+	)
 
-    ctx := context.WithValue(
-        req.Context(),
-        middleware.UserContextKey,
-        session,
-    )
+	ctx := context.WithValue(
+		req.Context(),
+		middleware.UserContextKey,
+		session,
+	)
 
-    req = req.WithContext(ctx)
+	req = req.WithContext(ctx)
 
-    rec := httptest.NewRecorder()
+	rec := httptest.NewRecorder()
 
-    handler.SubmitTicket(rec, req)
+	handler.SubmitTicket(rec, req)
 
-    if rec.Code != http.StatusBadRequest {
-        t.Fatalf("expected %d got %d",
-            http.StatusBadRequest,
-            rec.Code)
-    }
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("expected %d got %d",
+			http.StatusBadRequest,
+			rec.Code)
+	}
 }
 
 func TestSubmitTicket_ServiceError(t *testing.T) {
-    ticketSvc := &mockTicketService{
-        submitTicketFunc: func(
-            ctx context.Context,
-            ticket *models.SupportTicket,
-        ) error {
-            return errors.New("service failed")
-        },
-    }
+	ticketSvc := &mockTicketService{
+		submitTicketFunc: func(
+			ctx context.Context,
+			ticket *models.SupportTicket,
+		) error {
+			return errors.New("service failed")
+		},
+	}
 
-    handler := NewStudentHandler(nil, ticketSvc)
+	handler := NewStudentHandler(nil, ticketSvc)
 
-    body := `{
+	body := `{
         "category":"payment",
         "subject":"Receipt",
         "message":"Missing receipt"
     }`
 
-    req := httptest.NewRequest(
-        http.MethodPost,
-        "/ticket",
-        strings.NewReader(body),
-    )
+	req := httptest.NewRequest(
+		http.MethodPost,
+		"/ticket",
+		strings.NewReader(body),
+	)
 
-    ctx := context.WithValue(
-        req.Context(),
-        middleware.UserContextKey,
-        &auth.Session{UserID: "STU001"},
-    )
+	ctx := context.WithValue(
+		req.Context(),
+		middleware.UserContextKey,
+		&auth.Session{UserID: "STU001"},
+	)
 
-    req = req.WithContext(ctx)
+	req = req.WithContext(ctx)
 
-    rec := httptest.NewRecorder()
+	rec := httptest.NewRecorder()
 
-    handler.SubmitTicket(rec, req)
+	handler.SubmitTicket(rec, req)
 
-    if rec.Code != http.StatusUnprocessableEntity {
-        t.Fatalf("expected %d got %d",
-            http.StatusUnprocessableEntity,
-            rec.Code)
-    }
+	if rec.Code != http.StatusUnprocessableEntity {
+		t.Fatalf("expected %d got %d",
+			http.StatusUnprocessableEntity,
+			rec.Code)
+	}
 }
 
 func TestSubmitTicket_Success(t *testing.T) {
-    ticketSvc := &mockTicketService{
-        submitTicketFunc: func(
-            ctx context.Context,
-            ticket *models.SupportTicket,
-        ) error {
+	ticketSvc := &mockTicketService{
+		submitTicketFunc: func(
+			ctx context.Context,
+			ticket *models.SupportTicket,
+		) error {
 
-            if ticket.StudentID != "STU001" {
-                t.Fatal("wrong student")
-            }
+			if ticket.StudentID != "STU001" {
+				t.Fatal("wrong student")
+			}
 
-            return nil
-        },
-    }
+			return nil
+		},
+	}
 
-    handler := NewStudentHandler(nil, ticketSvc)
+	handler := NewStudentHandler(nil, ticketSvc)
 
-    body := `{
+	body := `{
         "category":"payment",
         "subject":"Receipt",
         "message":"Missing receipt"
     }`
 
-    req := httptest.NewRequest(
-        http.MethodPost,
-        "/ticket",
-        strings.NewReader(body),
-    )
+	req := httptest.NewRequest(
+		http.MethodPost,
+		"/ticket",
+		strings.NewReader(body),
+	)
 
-    ctx := context.WithValue(
-        req.Context(),
-        middleware.UserContextKey,
-        &auth.Session{UserID: "STU001"},
-    )
+	ctx := context.WithValue(
+		req.Context(),
+		middleware.UserContextKey,
+		&auth.Session{UserID: "STU001"},
+	)
 
-    req = req.WithContext(ctx)
+	req = req.WithContext(ctx)
 
-    rec := httptest.NewRecorder()
+	rec := httptest.NewRecorder()
 
-    handler.SubmitTicket(rec, req)
+	handler.SubmitTicket(rec, req)
 
-    if rec.Code != http.StatusCreated {
-        t.Fatalf("expected %d got %d",
-            http.StatusCreated,
-            rec.Code)
-    }
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("expected %d got %d",
+			http.StatusCreated,
+			rec.Code)
+	}
 }

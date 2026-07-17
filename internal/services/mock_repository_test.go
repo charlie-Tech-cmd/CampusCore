@@ -11,12 +11,12 @@ import (
 // mockFinancialRepository implements models.FinancialRepository for unit tests.
 type mockFinancialRepository struct {
 	// Function fields allow each test to customize behavior.
-	getFeeStructureFn          func(ctx context.Context, departmentID, level int, feeType, session string) (*models.FeeStructure, error)
-	recordPaymentFn            func(ctx context.Context, payment *models.FeePayment) error
-	checkPaymentExistsFn       func(ctx context.Context, gatewayRef string) (bool, error)
+	getFeeStructureFn           func(ctx context.Context, departmentID, level int, feeType, session string) (*models.FeeStructure, error)
+	recordPaymentFn             func(ctx context.Context, payment *models.FeePayment) error
+	checkPaymentExistsFn        func(ctx context.Context, gatewayRef string) (bool, error)
 	getStudentClearanceStatusFn func(ctx context.Context, studentID string) ([]models.StudentClearance, error)
-	updateClearanceStatusFn    func(ctx context.Context, studentID string, officeID int, status models.ClearanceStatus, staffID string) error
-	createTicketFn             func(ctx context.Context, ticket *models.SupportTicket) error
+	updateClearanceStatusFn     func(ctx context.Context, studentID string, officeID int, status models.ClearanceStatus, staffID string) error
+	createTicketFn              func(ctx context.Context, ticket *models.SupportTicket) error
 }
 
 func (m *mockFinancialRepository) GetFeeStructure(

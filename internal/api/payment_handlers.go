@@ -7,23 +7,23 @@ import (
 
 // PaymentHandler handles payment requests.
 type PaymentHandler struct {
-    paymentService PaymentService
+	paymentService PaymentService
 }
 
 // NewPaymentHandler creates a PaymentHandler.
 func NewPaymentHandler(paymentService PaymentService) *PaymentHandler {
-    return &PaymentHandler{
-        paymentService: paymentService,
-    }
+	return &PaymentHandler{
+		paymentService: paymentService,
+	}
 }
 
 // PaymentRequest represents a payment request.
 type PaymentRequest struct {
-	StudentID  string  `json:"student_id"`
-	Reference  string  `json:"reference"`
-	Amount     float64 `json:"amount"`
-	FeeType    string  `json:"fee_type"`
-	Session    string  `json:"session"`
+	StudentID string  `json:"student_id"`
+	Reference string  `json:"reference"`
+	Amount    float64 `json:"amount"`
+	FeeType   string  `json:"fee_type"`
+	Session   string  `json:"session"`
 }
 
 // VerifyPayment validates and records a payment.

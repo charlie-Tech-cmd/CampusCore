@@ -1,10 +1,10 @@
 package governance
 
 import (
+	"campuscore/internal/models"
 	"errors"
 	"fmt"
 	"strings"
-	"campuscore/internal/models"
 )
 
 // Engine handles the logical validations for our institutional workflow states
@@ -29,7 +29,7 @@ func (e *Engine) ProcessApprovalAdvance(courseCode string, currentActorRole mode
 	// Enforce strict tier progression rules
 	switch approval.CurrentState {
 	case models.StatusSubmitted:
-		if currentActorRole != models.RoleAdmin && string(currentActorRole) != "HOD" { 
+		if currentActorRole != models.RoleAdmin && string(currentActorRole) != "HOD" {
 			return errors.New("governance conflict: only the Head of Department can approve a primary submission")
 		}
 		nextState = models.StatusHODApproved

@@ -60,7 +60,7 @@ func (s *AcademicService) RegisterCourse(studentID string, courseCode string, se
 		FROM student_courses sc 
 		JOIN courses c ON sc.course_code = c.code 
 		WHERE sc.student_id = $1 AND sc.session = $2 AND sc.semester = $3 AND sc.status = 'approved';`
-	
+
 	err = tx.QueryRow(loadQuery, studentID, session, semester).Scan(&currentTotalUnits)
 	if err != nil {
 		return err

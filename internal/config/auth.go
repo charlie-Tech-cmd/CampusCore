@@ -29,3 +29,17 @@ type AuthConfig struct {
 	// CookieSameSite specifies the SameSite policy for cookies.
 	CookieSameSite string
 }
+
+// loadAuthConfig loads authentication configuration from the environment.
+func loadAuthConfig() AuthConfig {
+	return AuthConfig{
+		JWTSecret:          getEnv("JWT_SECRET", "change-me-before-production"),
+		AccessTokenExpiry:  getEnvAsDuration("ACCESS_TOKEN_EXPIRY", "15m"),
+		RefreshTokenExpiry: getEnvAsDuration("REFRESH_TOKEN_EXPIRY", "168h"),
+		Issuer:             getEnv("JWT_ISSUER", "CampusCore"),
+		Audience:           getEnv("JWT_AUDIENCE", "CampusCore"),
+		CookieSecure:       getEnvAsBool("COOKIE_SECURE", false),
+		CookieHTTPOnly:     getEnvAsBool("COOKIE_HTTP_ONLY", true),
+		CookieSameSite:     getEnv("COOKIE_SAME_SITE", "Lax"),
+	}
+}
