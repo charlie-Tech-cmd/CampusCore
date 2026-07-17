@@ -1,6 +1,9 @@
 package config
 
-import "time"
+import (
+	"fmt"
+	"time"
+)
 
 // DatabaseConfig contains PostgreSQL connection and
 // connection pool settings.
@@ -36,4 +39,30 @@ func loadDatabaseConfig() DatabaseConfig {
 		ConnMaxLifetime: getEnvAsDuration("DB_CONN_MAX_LIFETIME", "30m"),
 		ConnMaxIdleTime: getEnvAsDuration("DB_CONN_MAX_IDLE_TIME", "5m"),
 	}
+}
+
+// ConnectionString returns the PostgreSQL DSN.
+func (c DatabaseConfig) ConnectionString() string {
+	return fmt.Sprintf(
+		"host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
+		c.Host,
+		c.Port,
+		c.User,
+		c.Password,
+		c.Name,
+		c.SSLMode,
+	)
+}
+
+// MigrationURL returns the PostgreSQL URL required by golang-migrate.
+func (c DatabaseConfig) MigrationURL() string {
+	return fmt.Sprintf(
+		"postgres://%s:%s@%s:%s/%s?sslmode=%s",
+		c.User,
+		c.Password,
+		c.Host,
+		c.Port,
+		c.Name,
+		c.SSLMode,
+	)
 }

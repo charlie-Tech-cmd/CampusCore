@@ -44,10 +44,7 @@ CREATE INDEX idx_student_courses_course
 ON student_courses(course_code);
 
 CREATE INDEX idx_student_courses_session
-ON student_courses(session);
-
-CREATE INDEX idx_student_courses_semester
-ON student_courses(semester);
+ON student_courses(session_id);
 
 -- ============================================================================
 -- RESULTS
@@ -60,10 +57,9 @@ CREATE INDEX idx_results_course
 ON results(course_code);
 
 CREATE INDEX idx_results_session
-ON results(session);
+ON results(session_id);
 
-CREATE INDEX idx_results_semester
-ON results(semester);
+
 
 -- ============================================================================
 -- APPROVALS

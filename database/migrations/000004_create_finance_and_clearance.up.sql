@@ -131,45 +131,5 @@ CREATE TABLE clearance_attachments (
     uploaded_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- ============================================================================
--- INDEXES
--- ============================================================================
-
-CREATE INDEX idx_fee_structures_lookup
-ON fee_structures (
-    department_id,
-    level,
-    session
-);
-
-CREATE INDEX idx_fee_payments_student
-ON fee_payments (
-    student_id
-);
-
-CREATE INDEX idx_fee_payments_reference
-ON fee_payments (
-    gateway_reference
-);
-
-CREATE INDEX idx_fee_payments_status
-ON fee_payments (
-    status
-);
-
-CREATE INDEX idx_student_clearances_student
-ON student_clearances (
-    student_id
-);
-
-CREATE INDEX idx_student_clearances_status
-ON student_clearances (
-    status
-);
-
-CREATE INDEX idx_clearance_attachments_clearance
-ON clearance_attachments (
-    clearance_id
-);
 
 COMMIT;

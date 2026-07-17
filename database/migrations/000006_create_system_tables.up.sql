@@ -2,9 +2,8 @@
 -- CAMPUSCORE
 -- Migration: 000006_create_system_tables.up.sql
 -- Description:
--- Creates:
+-- -- Creates:
 --   - Audit Trails
---   - System Configurations
 -- ============================================================================
 
 BEGIN;
@@ -27,18 +26,6 @@ CREATE TABLE audit_trails (
     ip_address INET,
 
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
--- ============================================================================
--- SYSTEM CONFIGURATIONS
--- ============================================================================
-
-CREATE TABLE system_configs (
-    config_key VARCHAR(100) PRIMARY KEY,
-
-    config_value TEXT NOT NULL,
-
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 COMMIT;

@@ -5,6 +5,7 @@ import (
 	"log"
 
 	"campuscore/internal/config"
+	dbmigrate "campuscore/internal/database/migrate"
 )
 
 func main() {
@@ -22,6 +23,11 @@ func main() {
 		log.Fatalf("failed to connect to database: %v", err)
 	}
 	defer dbContainer.Pool.Close()
+
+	// Run database migrations.
+	if err := dbmigrate.Run(cfg.Database.MigrationURL()); err != nil {
+		log.Fatalf("failed to run database migrations: %v", err)
+	}
 
 	// Build the HTTP server.
 	server, worker := newServer(dbContainer.Pool)
