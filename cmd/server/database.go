@@ -2,31 +2,56 @@ package main
 
 import (
 	"database/sql"
+	"fmt"
 	"log"
-	"time"
+
+	"campuscore/internal/config"
 
 	_ "github.com/lib/pq"
 )
 
-func mustConnectDB() *sql.DB {
-	connStr := "host=127.0.0.1 port=5432 user=postgres password=postgres dbname=campuscore sslmode=disable"
+// DBContainer wraps the PostgreSQL connection pool.
+type DBContainer struct {
+	Pool *sql.DB
+}
 
-	log.Println(connStr)
+// ConnectPostgres creates and validates the PostgreSQL connection pool.
+func ConnectPostgres(cfg config.DatabaseConfig) (*DBContainer, error) {
+	connStr := fmt.Sprintf(
+		"host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
+		cfg.Host,
+		cfg.Port,
+		cfg.User,
+		cfg.Password,
+		cfg.Name,
+		cfg.SSLMode,
+	)
 
-	db, err := sql.Open("postgres", connStr)
+log.Printf(
+	"Connecting to PostgreSQL (host=%s port=%s database=%s sslmode=%s)",
+	cfg.Host,
+	cfg.Port,
+	cfg.Name,
+	cfg.SSLMode,
+)
+	pool, err := sql.Open("postgres", connStr)
 	if err != nil {
-		log.Fatal(err)
+		return nil, fmt.Errorf("opening database connection: %w", err)
 	}
 
-	db.SetMaxOpenConns(25)
-	db.SetMaxIdleConns(10)
-	db.SetConnMaxLifetime(15 * time.Minute)
+	pool.SetMaxOpenConns(cfg.MaxOpenConns)
+	pool.SetMaxIdleConns(cfg.MaxIdleConns)
+	pool.SetConnMaxLifetime(cfg.ConnMaxLifetime)
+	pool.SetConnMaxIdleTime(cfg.ConnMaxIdleTime)
 
-	if err := db.Ping(); err != nil {
-		log.Fatal(err)
+	if err := pool.Ping(); err != nil {
+		pool.Close()
+		return nil, fmt.Errorf("ping database: %w", err)
 	}
 
 	log.Println("Database connected.")
 
-	return db
+	return &DBContainer{
+		Pool: pool,
+	}, nil
 }
