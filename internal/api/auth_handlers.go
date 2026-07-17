@@ -9,13 +9,13 @@ import (
 	"campuscore/internal/models"
 )
 
-// AuthHandler coordinates network data transitions for system access controls
+// AuthHandler coordinates network data transitions for system access controls.
 type AuthHandler struct {
 	userRepo   models.UserRepository
 	sessionMgr *auth.SessionManager
 }
 
-// NewAuthHandler instantiates our authentication endpoint controller
+// NewAuthHandler instantiates our authentication endpoint controller.
 func NewAuthHandler(ur models.UserRepository, sm *auth.SessionManager) *AuthHandler {
 	return &AuthHandler{
 		userRepo:   ur,
@@ -23,103 +23,109 @@ func NewAuthHandler(ur models.UserRepository, sm *auth.SessionManager) *AuthHand
 	}
 }
 
-// LoginRequest defines the expected JSON payload incoming from the login form submission
+// LoginRequest defines the expected JSON payload.
 type LoginRequest struct {
 	ID       string `json:"id"` // Matric Number or Staff ID
 	Password string `json:"password"`
 }
 
-// Login processes incoming login forms and establishes stateful session cookies
+// Login authenticates a user and issues both a session cookie and JWT.
 func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
-	// 1. Enforce strict POST method handling
+	// Only POST is allowed.
 	if r.Method != http.MethodPost {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		_, _ = w.Write([]byte(`{"error": "Method not allowed. Use POST."}`))
+		http.Error(w, `{"error":"Method not allowed. Use POST."}`, http.StatusMethodNotAllowed)
 		return
 	}
 
-	// 2. Decode incoming JSON payload safely
+	// Decode request.
 	var req LoginRequest
-	err := json.NewDecoder(r.Body).Decode(&req)
-	if err != nil {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusBadRequest)
-		_, _ = w.Write([]byte(`{"error": "Invalid request payload syntax."}`))
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, `{"error":"Invalid request payload syntax."}`, http.StatusBadRequest)
 		return
 	}
 
-	// 3. Locate the profile record row inside our repository using the input ID
-	user, err := h.userRepo.FindByEmail(req.ID) // Dynamic check fallback matching lookup hooks
+	// Lookup user.
+	user, err := h.userRepo.FindByEmail(req.ID)
 	if err != nil {
-		// Try lookup by direct primary ID string if email parsing is skipped
 		user, err = h.userRepo.FindByID(req.ID)
 		if err != nil {
-			// Security Strategy: Return a vague error to prevent malicious username enumeration
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusUnauthorized)
-			_, _ = w.Write([]byte(`{"error": "Invalid identification numbers or password signature."}`))
+			http.Error(w, `{"error":"Invalid identification numbers or password signature."}`, http.StatusUnauthorized)
 			return
 		}
 	}
 
-	// 4. Validate the plain-text password input against the stored cryptographic hash
+	// Verify password.
 	if !auth.CheckPasswordHash(req.Password, user.PasswordHash) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusUnauthorized)
-		_, _ = w.Write([]byte(`{"error": "Invalid identification numbers or password signature."}`))
+		http.Error(w, `{"error":"Invalid identification numbers or password signature."}`, http.StatusUnauthorized)
 		return
 	}
 
-	// 5. Generate a cryptographically strong session token inside our memory matrix
-	token, err := h.sessionMgr.CreateSession(user.ID, string(user.Role))
+	// Create session.
+	sessionToken, err := h.sessionMgr.CreateSession(user.ID, string(user.Role))
 	if err != nil {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusInternalServerError)
-		_, _ = w.Write([]byte(`{"error": "Failed to safely issue tracking session parameters."}`))
+		http.Error(w, `{"error":"Failed to safely issue tracking session parameters."}`, http.StatusInternalServerError)
 		return
 	}
 
-	// 6. Update the user's last login tracking timestamp in the background
+	// Create JWT.
+	accessToken, err := auth.GenerateAccessToken(user.ID, string(user.Role))
+	if err != nil {
+		http.Error(w, `{"error":"Failed to generate access token."}`, http.StatusInternalServerError)
+		return
+	}
+
+	// Update login timestamp.
 	_ = h.userRepo.UpdateLastLogin(user.ID)
 
-	// 7. Embed the session token inside a highly protected, secure client cookie
+	// Set session cookie.
 	http.SetCookie(w, &http.Cookie{
 		Name:     "session_token",
-		Value:    token,
+		Value:    sessionToken,
 		Path:     "/",
-		Expires:  time.Now().Add(5 * time.Minute), // Initial matching boundary tracking tag
-		HttpOnly: true,                            // Blocks browser XSS scripts from stealing tokens
-		Secure:   false,                           // Set to true in production context over HTTPS
-		SameSite: http.SameSiteStrictMode,         // Eliminates Cross-Site Request Forgery (CSRF) attacks
+		Expires:  time.Now().Add(5 * time.Minute),
+		HttpOnly: true,
+		Secure:   false, // Change to true in production
+		SameSite: http.SameSiteStrictMode,
 	})
 
-	// 8. Output a clean serialization response profile
+	// Return JWT.
+	response := map[string]any{
+		"message":      "Authorization successful.",
+		"role":         string(user.Role),
+		"access_token": accessToken,
+		"token_type":   "Bearer",
+		"expires_in":   int(auth.AccessTokenDuration.Seconds()),
+	}
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	_, _ = w.Write([]byte(`{"message": "Authorization successful.", "role": "` + string(user.Role) + `"}`))
+
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		http.Error(w, `{"error":"Failed to encode response."}`, http.StatusInternalServerError)
+		return
+	}
 }
 
-// Logout breaks active token paths to explicitly shut down client access states
+// Logout revokes the current session.
 func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
-	// Extract the session cookie to identify what token to destroy
 	cookie, err := r.Cookie("session_token")
 	if err == nil {
-		// Remotely destroy the active session context state tracking row inside memory
 		h.sessionMgr.RevokeSession(cookie.Value)
 	}
 
-	// Wipe out the client's tracking cookie footprint instantly by forcing expiration parameters
 	http.SetCookie(w, &http.Cookie{
 		Name:     "session_token",
 		Value:    "",
 		Path:     "/",
-		Expires:  time.Unix(0, 0), // Immediate expiration command
-		HttpOnly: true,
+		Expires:  time.Unix(0, 0),
 		MaxAge:   -1,
+		HttpOnly: true,
 	})
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	_, _ = w.Write([]byte(`{"message": "Session tracking token revoked successfully. Disconnected."}`))
+
+	_ = json.NewEncoder(w).Encode(map[string]string{
+		"message": "Session tracking token revoked successfully. Disconnected.",
+	})
 }
