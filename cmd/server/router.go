@@ -28,6 +28,12 @@ func registerRoutes(
 	mux.HandleFunc("/api/v1/auth/login", authHandler.Login)
 	mux.HandleFunc("/api/v1/auth/logout", authHandler.Logout)
 
+	mux.Handle(
+		"/api/v1/auth/me",
+		authMiddleware.Authenticate(
+			http.HandlerFunc(authHandler.Me),
+		),
+	)
 	// Student
 	mux.Handle(
 		"/api/v1/student/courses/register",
