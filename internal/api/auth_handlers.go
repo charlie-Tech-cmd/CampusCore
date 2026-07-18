@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"campuscore/internal/auth"
+	"campuscore/internal/middleware"
 	"campuscore/internal/models"
 )
 
@@ -33,33 +34,38 @@ type LoginRequest struct {
 func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	// Only POST is allowed.
 	if r.Method != http.MethodPost {
-		http.Error(w, `{"error":"Method not allowed. Use POST."}`, http.StatusMethodNotAllowed)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		_, _ = w.Write([]byte(`{"error": "Method not allowed. Use POST."}`))
 		return
 	}
-
 	// Decode request.
 	var req LoginRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, `{"error":"Invalid request payload syntax."}`, http.StatusBadRequest)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		_, _ = w.Write([]byte(`{"error": "Invalid request payload syntax."}`))
 		return
 	}
-
 	// Lookup user.
 	user, err := h.userRepo.FindByEmail(req.ID)
 	if err != nil {
 		user, err = h.userRepo.FindByID(req.ID)
 		if err != nil {
-			http.Error(w, `{"error":"Invalid identification numbers or password signature."}`, http.StatusUnauthorized)
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusUnauthorized)
+			_, _ = w.Write([]byte(`{"error": "Invalid identification numbers or password signature."}`))
 			return
 		}
 	}
 
 	// Verify password.
 	if !auth.CheckPasswordHash(req.Password, user.PasswordHash) {
-		http.Error(w, `{"error":"Invalid identification numbers or password signature."}`, http.StatusUnauthorized)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusUnauthorized)
+		_, _ = w.Write([]byte(`{"error": "Invalid identification numbers or password signature."}`))
 		return
 	}
-
 	// Create session.
 	sessionToken, err := h.sessionMgr.CreateSession(user.ID, string(user.Role))
 	if err != nil {
@@ -70,7 +76,9 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	// Create JWT.
 	accessToken, err := auth.GenerateAccessToken(user.ID, string(user.Role))
 	if err != nil {
-		http.Error(w, `{"error":"Failed to generate access token."}`, http.StatusInternalServerError)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		_, _ = w.Write([]byte(`{"error": "Failed to generate access token."}`))
 		return
 	}
 
@@ -101,7 +109,9 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 
 	if err := json.NewEncoder(w).Encode(response); err != nil {
-		http.Error(w, `{"error":"Failed to encode response."}`, http.StatusInternalServerError)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		_, _ = w.Write([]byte(`{"error": "Failed to encode response."}`))
 		return
 	}
 }
@@ -128,4 +138,28 @@ func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 	_ = json.NewEncoder(w).Encode(map[string]string{
 		"message": "Session tracking token revoked successfully. Disconnected.",
 	})
+}
+
+// Me returns the currently authenticated user's profile.
+func (h *AuthHandler) Me(w http.ResponseWriter, r *http.Request) {
+	sessionVal := r.Context().Value(middleware.UserContextKey)
+	if sessionVal == nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusUnauthorized)
+		_, _ = w.Write([]byte(`{"error": "Unauthorized"}`))
+		return
+	}
+
+	session := sessionVal.(*auth.Session)
+
+	user, err := h.userRepo.FindByID(session.UserID)
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotFound)
+		_, _ = w.Write([]byte(`{"error": "User not found"}`))
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(user)
 }

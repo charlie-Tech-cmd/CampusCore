@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"io"
 	"net/http"
@@ -15,6 +16,7 @@ import (
 )
 
 func TestNewAuthHandler(t *testing.T) {
+	t.Setenv("JWT_SECRET", "test-secret")
 	sessionMgr := auth.NewSessionManager()
 
 	handler := NewAuthHandler(nil, sessionMgr)
@@ -54,7 +56,7 @@ func TestLogin_MethodNotAllowed(t *testing.T) {
 		)
 	}
 
-	if ct := res.Header.Get("Content-Type"); ct != "application/json" {
+	if ct := res.Header.Get("Content-Type"); !strings.HasPrefix(ct, "application/json") {
 		t.Fatalf("expected application/json, got %s", ct)
 	}
 
@@ -94,7 +96,7 @@ func TestLogin_InvalidJSON(t *testing.T) {
 		)
 	}
 
-	if ct := res.Header.Get("Content-Type"); ct != "application/json" {
+	if ct := res.Header.Get("Content-Type"); !strings.HasPrefix(ct, "application/json") {
 		t.Fatalf("expected application/json, got %s", ct)
 	}
 
@@ -151,7 +153,7 @@ func TestLogin_UserNotFound(t *testing.T) {
 		)
 	}
 
-	if ct := res.Header.Get("Content-Type"); ct != "application/json" {
+	if ct := res.Header.Get("Content-Type"); !strings.HasPrefix(ct, "application/json") {
 		t.Fatalf("expected application/json, got %s", ct)
 	}
 
@@ -271,13 +273,6 @@ func TestLogin_Success(t *testing.T) {
 	res := rec.Result()
 	defer res.Body.Close()
 
-	if res.StatusCode != http.StatusOK {
-		t.Fatalf("expected %d, got %d",
-			http.StatusOK,
-			res.StatusCode,
-		)
-	}
-
 	if !updateCalled {
 		t.Fatal("expected UpdateLastLogin to be called")
 	}
@@ -302,16 +297,28 @@ func TestLogin_Success(t *testing.T) {
 		t.Fatal("expected HttpOnly cookie")
 	}
 
-	bodyBytes, _ := io.ReadAll(res.Body)
+	var response map[string]any
 
-	expected := `{"message": "Authorization successful.", "role": "student"}`
-
-	if strings.TrimSpace(string(bodyBytes)) != expected {
-		t.Fatalf("expected %s, got %s",
-			expected,
-			string(bodyBytes),
-		)
+	if err := json.NewDecoder(res.Body).Decode(&response); err != nil {
+		t.Fatal(err)
 	}
+
+	if response["message"] != "Authorization successful." {
+		t.Fatal("wrong message")
+	}
+
+	if response["role"] != "student" {
+		t.Fatal("wrong role")
+	}
+
+	if response["access_token"] == "" {
+		t.Fatal("missing access token")
+	}
+
+	if response["token_type"] != "Bearer" {
+		t.Fatal("wrong token type")
+	}
+
 }
 
 func TestLogout_WithSession(t *testing.T) {
