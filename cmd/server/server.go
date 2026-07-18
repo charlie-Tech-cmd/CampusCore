@@ -40,6 +40,7 @@ func newServer(db *sql.DB) (*http.Server, *notification.Worker) {
 
 	// Handlers.
 	authHandler := api.NewAuthHandler(userRepo, sessionManager)
+	refreshHandler := api.NewRefreshHandler()
 
 	studentHandler := api.NewStudentHandler(
 		academicService,
@@ -58,11 +59,11 @@ func newServer(db *sql.DB) (*http.Server, *notification.Worker) {
 	mux := registerRoutes(
 		authMiddleware,
 		authHandler,
+		refreshHandler,
 		studentHandler,
 		lecturerHandler,
 		paymentHandler,
 	)
-
 	server := &http.Server{
 		Addr:         ":8080",
 		Handler:      middleware.Recovery(middleware.Logger(mux)),

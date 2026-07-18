@@ -7,25 +7,28 @@ import (
 	"campuscore/internal/auth"
 )
 
+// RefreshHandler issues a new access token from a valid refresh token.
 type RefreshHandler struct{}
 
+// NewRefreshHandler creates a refresh handler.
 func NewRefreshHandler() *RefreshHandler {
 	return &RefreshHandler{}
 }
 
+// RefreshRequest represents the incoming refresh token payload.
 type RefreshRequest struct {
 	RefreshToken string `json:"refresh_token"`
 }
 
+// RefreshResponse represents the outgoing access token payload.
 type RefreshResponse struct {
 	AccessToken string `json:"access_token"`
 	TokenType   string `json:"token_type"`
 	ExpiresIn   int    `json:"expires_in"`
 }
 
+// RefreshToken validates a refresh token and issues a new access token.
 func (h *RefreshHandler) RefreshToken(w http.ResponseWriter, r *http.Request) {
-
-	// Only POST is allowed.
 	if r.Method != http.MethodPost {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusMethodNotAllowed)
@@ -36,7 +39,6 @@ func (h *RefreshHandler) RefreshToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Decode request.
 	var req RefreshRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -44,12 +46,11 @@ func (h *RefreshHandler) RefreshToken(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 
 		_ = json.NewEncoder(w).Encode(map[string]string{
-			"error": "Invalid request",
+			"error": "Invalid request payload",
 		})
 		return
 	}
 
-	// Validate refresh token.
 	claims, err := auth.ValidateRefreshToken(req.RefreshToken)
 	if err != nil {
 		w.Header().Set("Content-Type", "application/json")
@@ -61,7 +62,6 @@ func (h *RefreshHandler) RefreshToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Generate a new access token.
 	accessToken, err := auth.GenerateAccessToken(
 		claims.UserID,
 		claims.Role,
@@ -76,7 +76,6 @@ func (h *RefreshHandler) RefreshToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Respond with the new access token.
 	response := RefreshResponse{
 		AccessToken: accessToken,
 		TokenType:   "Bearer",

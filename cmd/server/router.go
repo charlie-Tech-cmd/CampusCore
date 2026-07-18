@@ -11,6 +11,7 @@ import (
 func registerRoutes(
 	authMiddleware *middleware.AuthGatekeeper,
 	authHandler *api.AuthHandler,
+	refreshHandler *api.RefreshHandler,
 	studentHandler *api.StudentHandler,
 	lecturerHandler *api.LecturerHandler,
 	paymentHandler *api.PaymentHandler,
@@ -27,6 +28,7 @@ func registerRoutes(
 	// Authentication
 	mux.HandleFunc("/api/v1/auth/login", authHandler.Login)
 	mux.HandleFunc("/api/v1/auth/logout", authHandler.Logout)
+	mux.HandleFunc("/api/v1/auth/refresh", refreshHandler.RefreshToken)
 
 	mux.Handle(
 		"/api/v1/auth/me",
