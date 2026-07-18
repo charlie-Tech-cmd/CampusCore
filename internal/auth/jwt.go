@@ -16,8 +16,11 @@ type Claims struct {
 	jwt.RegisteredClaims
 }
 
-// Access token lifetime.
-const AccessTokenDuration = 15 * time.Minute
+// Token lifetimes.
+const (
+	AccessTokenDuration  = 15 * time.Minute
+	RefreshTokenDuration = 7 * 24 * time.Hour
+)
 
 // jwtSecret loads the signing secret from the environment.
 func jwtSecret() ([]byte, error) {
@@ -25,11 +28,22 @@ func jwtSecret() ([]byte, error) {
 	if secret == "" {
 		return nil, errors.New("JWT_SECRET environment variable is not set")
 	}
+
 	return []byte(secret), nil
 }
 
-// GenerateAccessToken creates a signed JWT for an authenticated user.
+// GenerateAccessToken creates a signed access token.
 func GenerateAccessToken(userID, role string) (string, error) {
+	return generateToken(userID, role, AccessTokenDuration)
+}
+
+// GenerateRefreshToken creates a signed refresh token.
+func GenerateRefreshToken(userID, role string) (string, error) {
+	return generateToken(userID, role, RefreshTokenDuration)
+}
+
+// generateToken creates a signed JWT.
+func generateToken(userID, role string, duration time.Duration) (string, error) {
 	secret, err := jwtSecret()
 	if err != nil {
 		return "", err
@@ -44,8 +58,8 @@ func GenerateAccessToken(userID, role string) (string, error) {
 			Issuer:    "CampusCore",
 			Subject:   userID,
 			IssuedAt:  jwt.NewNumericDate(now),
-			ExpiresAt: jwt.NewNumericDate(now.Add(AccessTokenDuration)),
 			NotBefore: jwt.NewNumericDate(now),
+			ExpiresAt: jwt.NewNumericDate(now.Add(duration)),
 		},
 	}
 
@@ -54,8 +68,18 @@ func GenerateAccessToken(userID, role string) (string, error) {
 	return token.SignedString(secret)
 }
 
-// ValidateAccessToken verifies signature and expiration.
+// ValidateAccessToken validates an access token.
 func ValidateAccessToken(tokenString string) (*Claims, error) {
+	return validateToken(tokenString)
+}
+
+// ValidateRefreshToken validates a refresh token.
+func ValidateRefreshToken(tokenString string) (*Claims, error) {
+	return validateToken(tokenString)
+}
+
+// validateToken verifies signature and expiration.
+func validateToken(tokenString string) (*Claims, error) {
 	secret, err := jwtSecret()
 	if err != nil {
 		return nil, err
@@ -65,9 +89,10 @@ func ValidateAccessToken(tokenString string) (*Claims, error) {
 		tokenString,
 		&Claims{},
 		func(token *jwt.Token) (interface{}, error) {
-			if token.Method != jwt.SigningMethodHS256 {
+			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 				return nil, errors.New("unexpected signing method")
 			}
+
 			return secret, nil
 		},
 	)
@@ -78,7 +103,7 @@ func ValidateAccessToken(tokenString string) (*Claims, error) {
 
 	claims, ok := token.Claims.(*Claims)
 	if !ok || !token.Valid {
-		return nil, errors.New("invalid access token")
+		return nil, errors.New("invalid token")
 	}
 
 	return claims, nil
