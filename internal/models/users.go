@@ -44,10 +44,13 @@ type UserOnboarding struct {
 	Level           int      `json:"level"`
 }
 
-// UserRepository defines the required contract for user data manipulations
 type UserRepository interface {
 	Create(user *User) error
 	FindByID(id string) (*User, error)
 	FindByEmail(email string) (*User, error)
 	UpdateLastLogin(id string) error
+
+	// Student profile operations
+	GetProfile(id string) (*User, error)
+	UpdateProfile(user *User) error
 }

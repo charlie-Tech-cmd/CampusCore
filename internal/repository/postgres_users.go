@@ -120,3 +120,97 @@ func (r *PostgresUserRepository) UpdateLastLogin(id string) error {
 	}
 	return nil
 }
+
+// GetProfile retrieves a student's profile using their unique ID.
+func (r *PostgresUserRepository) GetProfile(id string) (*models.User, error) {
+	query := `
+		SELECT
+			id,
+			surname,
+			first_name,
+			middle_name,
+			email,
+			phone,
+			password_hash,
+			role,
+			department_id,
+			level,
+			last_login,
+			created_at
+		FROM users
+		WHERE id = $1
+		LIMIT 1;
+	`
+
+	row := r.db.QueryRow(query, id)
+
+	var u models.User
+	var lastLoginNull sql.NullTime
+	var deptNull sql.NullInt32
+
+	err := row.Scan(
+		&u.ID,
+		&u.Surname,
+		&u.FirstName,
+		&u.MiddleName,
+		&u.Email,
+		&u.Phone,
+		&u.PasswordHash,
+		&u.Role,
+		&deptNull,
+		&u.Level,
+		&lastLoginNull,
+		&u.CreatedAt,
+	)
+
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, fmt.Errorf("profile not found for user %s: %w", id, err)
+		}
+		return nil, fmt.Errorf("failed to retrieve user profile: %w", err)
+	}
+
+	if deptNull.Valid {
+		u.DepartmentID = int(deptNull.Int32)
+	}
+
+	if lastLoginNull.Valid {
+		u.LastLogin = lastLoginNull.Time
+	}
+
+	return &u, nil
+}
+
+// UpdateProfile updates editable profile information.
+func (r *PostgresUserRepository) UpdateProfile(user *models.User) error {
+	query := `
+		UPDATE users
+		SET
+			surname = $2,
+			first_name = $3,
+			middle_name = $4,
+			email = $5,
+			phone = $6,
+			department_id = $7,
+			level = $8
+		WHERE id = $1;
+	`
+
+	_, err := r.db.Exec(
+		query,
+		user.ID,
+		user.Surname,
+		user.FirstName,
+		user.MiddleName,
+		user.Email,
+		user.Phone,
+		user.DepartmentID,
+		user.Level,
+	)
+
+	if err != nil {
+		return fmt.Errorf("failed to update user profile: %w", err)
+	}
+
+	return nil
+}

@@ -7,6 +7,9 @@ type mockUserRepository struct {
 	findByIDFunc        func(string) (*models.User, error)
 	findByEmailFunc     func(string) (*models.User, error)
 	updateLastLoginFunc func(string) error
+
+	getProfileFunc    func(string) (*models.User, error)
+	updateProfileFunc func(*models.User) error
 }
 
 func (m *mockUserRepository) Create(user *models.User) error {
@@ -33,6 +36,20 @@ func (m *mockUserRepository) FindByEmail(email string) (*models.User, error) {
 func (m *mockUserRepository) UpdateLastLogin(id string) error {
 	if m.updateLastLoginFunc != nil {
 		return m.updateLastLoginFunc(id)
+	}
+	return nil
+}
+
+func (m *mockUserRepository) GetProfile(id string) (*models.User, error) {
+	if m.getProfileFunc != nil {
+		return m.getProfileFunc(id)
+	}
+	return nil, nil
+}
+
+func (m *mockUserRepository) UpdateProfile(user *models.User) error {
+	if m.updateProfileFunc != nil {
+		return m.updateProfileFunc(user)
 	}
 	return nil
 }
