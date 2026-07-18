@@ -56,6 +56,24 @@ func registerRoutes(
 		),
 	)
 
+	mux.Handle(
+		"/api/v1/student/profile",
+		authMiddleware.Authenticate(
+			authMiddleware.RequireRole("student")(
+				http.HandlerFunc(studentHandler.GetProfile),
+			),
+		),
+	)
+
+	mux.Handle(
+		"/api/v1/student/profile/update",
+		authMiddleware.Authenticate(
+			authMiddleware.RequireRole("student")(
+				http.HandlerFunc(studentHandler.UpdateProfile),
+			),
+		),
+	)
+
 	// Payments
 	mux.Handle(
 		"/api/v1/payments",
