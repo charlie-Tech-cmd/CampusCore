@@ -196,7 +196,7 @@ func (r *PostgresUserRepository) UpdateProfile(user *models.User) error {
 		WHERE id = $1;
 	`
 
-	_, err := r.db.Exec(
+	result, err := r.db.Exec(
 		query,
 		user.ID,
 		user.Surname,
@@ -212,5 +212,15 @@ func (r *PostgresUserRepository) UpdateProfile(user *models.User) error {
 		return fmt.Errorf("failed to update user profile: %w", err)
 	}
 
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to determine affected rows: %w", err)
+	}
+
+	if rowsAffected == 0 {
+		return fmt.Errorf("user profile not found")
+	}
+
 	return nil
+
 }
