@@ -1,10 +1,10 @@
 package services
 
 import (
+	"campuscore/internal/models"
 	"database/sql"
 	"errors"
 	"fmt"
-	//  "campuscore/internal/models"
 )
 
 // AcademicService manages business logic validation for enrollment and grading
@@ -128,4 +128,101 @@ func (s *AcademicService) CalculateGradeMetrics(score float64) (string, float64)
 	default:
 		return "F", 0.0
 	}
+}
+
+// GetStudentProfile retrieves a student's profile information.
+func (s *AcademicService) GetStudentProfile(studentID string) (*models.User, error) {
+	query := `
+		SELECT
+			id,
+			surname,
+			first_name,
+			middle_name,
+			email,
+			phone,
+			role,
+			department_id,
+			level,
+			last_login,
+			created_at
+		FROM users
+		WHERE id = $1
+		  AND role = 'student'
+		LIMIT 1;
+	`
+
+	var profile models.User
+	var dept sql.NullInt32
+	var lastLogin sql.NullTime
+
+	err := s.db.QueryRow(query, studentID).Scan(
+		&profile.ID,
+		&profile.Surname,
+		&profile.FirstName,
+		&profile.MiddleName,
+		&profile.Email,
+		&profile.Phone,
+		&profile.Role,
+		&dept,
+		&profile.Level,
+		&lastLogin,
+		&profile.CreatedAt,
+	)
+
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, errors.New("student profile not found")
+		}
+		return nil, err
+	}
+
+	if dept.Valid {
+		profile.DepartmentID = int(dept.Int32)
+	}
+
+	if lastLogin.Valid {
+		profile.LastLogin = lastLogin.Time
+	}
+
+	return &profile, nil
+}
+
+// UpdateStudentProfile updates editable student profile fields.
+func (s *AcademicService) UpdateStudentProfile(profile *models.User) error {
+	query := `
+		UPDATE users
+		SET
+			surname = $2,
+			first_name = $3,
+			middle_name = $4,
+			email = $5,
+			phone = $6
+		WHERE id = $1
+		  AND role = 'student';
+	`
+
+	result, err := s.db.Exec(
+		query,
+		profile.ID,
+		profile.Surname,
+		profile.FirstName,
+		profile.MiddleName,
+		profile.Email,
+		profile.Phone,
+	)
+
+	if err != nil {
+		return fmt.Errorf("failed to update student profile: %w", err)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rowsAffected == 0 {
+		return errors.New("student profile not found")
+	}
+
+	return nil
 }
