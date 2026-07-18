@@ -6,6 +6,8 @@ import "campuscore/internal/models"
 
 type mockAcademicService struct {
 	registerCourseFunc func(studentID, courseCode, session, semester string) error
+	getProfileFunc     func(studentID string) (*models.User, error)
+	updateProfileFunc  func(profile *models.User) error
 }
 
 func (m *mockAcademicService) RegisterCourse(
@@ -16,6 +18,20 @@ func (m *mockAcademicService) RegisterCourse(
 ) error {
 	if m.registerCourseFunc != nil {
 		return m.registerCourseFunc(studentID, courseCode, session, semester)
+	}
+	return nil
+}
+
+func (m *mockAcademicService) GetStudentProfile(studentID string) (*models.User, error) {
+	if m.getProfileFunc != nil {
+		return m.getProfileFunc(studentID)
+	}
+	return nil, nil
+}
+
+func (m *mockAcademicService) UpdateStudentProfile(profile *models.User) error {
+	if m.updateProfileFunc != nil {
+		return m.updateProfileFunc(profile)
 	}
 	return nil
 }

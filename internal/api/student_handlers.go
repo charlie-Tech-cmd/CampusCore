@@ -40,6 +40,15 @@ type TicketSubmissionRequest struct {
 	Message  string `json:"message"`
 }
 
+// StudentProfileUpdateRequest represents editable student profile fields.
+type StudentProfileUpdateRequest struct {
+	Surname    string `json:"surname"`
+	FirstName  string `json:"first_name"`
+	MiddleName string `json:"middle_name"`
+	Email      string `json:"email"`
+	Phone      string `json:"phone"`
+}
+
 func writeJSON(w http.ResponseWriter, status int, payload any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
@@ -137,5 +146,80 @@ func (h *StudentHandler) SubmitTicket(w http.ResponseWriter, r *http.Request) {
 
 	writeJSON(w, http.StatusCreated, map[string]string{
 		"message": "ticket submitted successfully",
+	})
+}
+
+// GetProfile returns the authenticated student's profile.
+func (h *StudentHandler) GetProfile(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{
+			"error": "method not allowed",
+		})
+		return
+	}
+
+	session, ok := getSession(r)
+	if !ok {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{
+			"error": "unauthorized",
+		})
+		return
+	}
+
+	profile, err := h.academicService.GetStudentProfile(session.UserID)
+	if err != nil {
+		writeJSON(w, http.StatusNotFound, map[string]string{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	writeJSON(w, http.StatusOK, profile)
+}
+
+// UpdateProfile updates the authenticated student's profile.
+func (h *StudentHandler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPut {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{
+			"error": "method not allowed",
+		})
+		return
+	}
+
+	session, ok := getSession(r)
+	if !ok {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{
+			"error": "unauthorized",
+		})
+		return
+	}
+
+	var req StudentProfileUpdateRequest
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{
+			"error": "invalid request body",
+		})
+		return
+	}
+
+	profile := &models.User{
+		ID:         session.UserID,
+		Surname:    req.Surname,
+		FirstName:  req.FirstName,
+		MiddleName: req.MiddleName,
+		Email:      req.Email,
+		Phone:      req.Phone,
+	}
+
+	if err := h.academicService.UpdateStudentProfile(profile); err != nil {
+		writeJSON(w, http.StatusUnprocessableEntity, map[string]string{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string]string{
+		"message": "profile updated successfully",
 	})
 }

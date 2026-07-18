@@ -13,6 +13,10 @@ type AcademicService interface {
 		session string,
 		semester string,
 	) error
+
+	GetStudentProfile(studentID string) (*models.User, error)
+
+	UpdateStudentProfile(profile *models.User) error
 }
 
 type TicketService interface {
