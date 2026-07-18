@@ -16,7 +16,6 @@ import (
 )
 
 func TestNewAuthHandler(t *testing.T) {
-	t.Setenv("JWT_SECRET", "test-secret")
 	sessionMgr := auth.NewSessionManager()
 
 	handler := NewAuthHandler(nil, sessionMgr)
@@ -223,6 +222,8 @@ func TestLogin_InvalidPassword(t *testing.T) {
 }
 
 func TestLogin_Success(t *testing.T) {
+	t.Setenv("JWT_SECRET", "test-secret")
+
 	hashedPassword, err := auth.HashPassword("password123")
 	if err != nil {
 		t.Fatalf("failed to hash password: %v", err)
@@ -315,10 +316,17 @@ func TestLogin_Success(t *testing.T) {
 		t.Fatal("missing access token")
 	}
 
+	if response["refresh_token"] == "" {
+		t.Fatal("missing refresh token")
+	}
+
 	if response["token_type"] != "Bearer" {
 		t.Fatal("wrong token type")
 	}
 
+	if response["expires_in"] == nil {
+		t.Fatal("missing expires_in")
+	}
 }
 
 func TestLogout_WithSession(t *testing.T) {

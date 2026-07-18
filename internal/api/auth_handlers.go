@@ -30,6 +30,13 @@ type LoginRequest struct {
 	Password string `json:"password"`
 }
 
+// RegisterResponse defines the response returned after a successful registration.
+type RegisterResponse struct {
+	Message string `json:"message"`
+	UserID  string `json:"user_id"`
+	Role    string `json:"role"`
+}
+
 // Login authenticates a user and issues both a session cookie and JWT.
 func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	// Only POST is allowed.
@@ -114,6 +121,113 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		_, _ = w.Write([]byte(`{"error": "Failed to encode response."}`))
 		return
 	}
+}
+
+// Register creates a new CampusCore user account.
+func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
+	// Only POST requests are allowed.
+	if r.Method != http.MethodPost {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusMethodNotAllowed)
+
+		_ = json.NewEncoder(w).Encode(map[string]string{
+			"error": "Method not allowed. Use POST.",
+		})
+		return
+	}
+
+	// Decode incoming request.
+	var req models.UserOnboarding
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+
+		_ = json.NewEncoder(w).Encode(map[string]string{
+			"error": "Invalid request payload.",
+		})
+		return
+	}
+
+	// Validate password confirmation.
+	if req.Password != req.ConfirmPassword {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+
+		_ = json.NewEncoder(w).Encode(map[string]string{
+			"error": "Passwords do not match.",
+		})
+		return
+	}
+
+	// Ensure the ID does not already exist.
+	if _, err := h.userRepo.FindByID(req.ID); err == nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusConflict)
+
+		_ = json.NewEncoder(w).Encode(map[string]string{
+			"error": "User already exists.",
+		})
+		return
+	}
+
+	// Ensure the email does not already exist.
+	if _, err := h.userRepo.FindByEmail(req.Email); err == nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusConflict)
+
+		_ = json.NewEncoder(w).Encode(map[string]string{
+			"error": "Email already registered.",
+		})
+		return
+	}
+
+	// Hash the password.
+	hashedPassword, err := auth.HashPassword(req.Password)
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+
+		_ = json.NewEncoder(w).Encode(map[string]string{
+			"error": "Failed to secure password.",
+		})
+		return
+	}
+
+	// Build the user entity.
+	user := &models.User{
+		ID:           req.ID,
+		Surname:      req.Surname,
+		FirstName:    req.FirstName,
+		MiddleName:   req.MiddleName,
+		Email:        req.Email,
+		Phone:        req.Phone,
+		PasswordHash: hashedPassword,
+		Role:         req.Role,
+		DepartmentID: req.DepartmentID,
+		Level:        req.Level,
+	}
+
+	// Persist the new user.
+	if err := h.userRepo.Create(user); err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+
+		_ = json.NewEncoder(w).Encode(map[string]string{
+			"error": "Failed to create user account.",
+		})
+		return
+	}
+
+	// Respond.
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+
+	_ = json.NewEncoder(w).Encode(RegisterResponse{
+		Message: "Account created successfully.",
+		UserID:  user.ID,
+		Role:    string(user.Role),
+	})
 }
 
 // Logout revokes the current session.
