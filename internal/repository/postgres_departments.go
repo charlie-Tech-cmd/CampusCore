@@ -68,8 +68,48 @@ func (r *PostgresDepartmentRepository) FindByID(id int) (*models.Department, err
 	return &department, nil
 }
 
+// FindByCode retrieves a department by its unique code.
+func (r *PostgresDepartmentRepository) FindByCode(code string) (*models.Department, error) {
+	query := `
+		SELECT
+			id,
+			code,
+			name,
+			faculty_id,
+			description,
+			is_active,
+			created_at,
+			updated_at
+		FROM departments
+		WHERE code = $1
+		LIMIT 1;
+	`
+
+	var department models.Department
+
+	err := r.db.QueryRow(query, code).Scan(
+		&department.ID,
+		&department.Code,
+		&department.Name,
+		&department.FacultyID,
+		&department.Description,
+		&department.IsActive,
+		&department.CreatedAt,
+		&department.UpdatedAt,
+	)
+
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, errors.New("department not found")
+		}
+		return nil, fmt.Errorf("failed to retrieve department: %w", err)
+	}
+
+	return &department, nil
+}
+
 // FindAll retrieves all departments.
-func (r *PostgresDepartmentRepository) FindAll() ([]models.Department, error) {
+func (r *PostgresDepartmentRepository) List() ([]models.Department, error) {
 	query := `
 		SELECT id, name, faculty_id
 		FROM departments
