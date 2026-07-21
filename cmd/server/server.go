@@ -42,13 +42,16 @@ func newServer(db *sql.DB) (*http.Server, *notification.Worker) {
 
 	departmentService := services.NewDepartmentService(departmentRepo)
 	facultyService := services.NewFacultyService(facultyRepo)
+	courseService := services.NewCourseService(courseRepo)
+
 	registrationService := services.NewRegistrationService(
 		userRepo,
 		courseRepo,
 		enrollmentRepo,
 	)
 	resultService := services.NewResultService(resultRepo)
-	resultHandler := api.NewResultHandler(resultService)
+
+	// Handlers.
 	authHandler := api.NewAuthHandler(userRepo, sessionManager)
 	refreshHandler := api.NewRefreshHandler()
 
@@ -73,14 +76,19 @@ func newServer(db *sql.DB) (*http.Server, *notification.Worker) {
 		facultyService,
 	)
 
+	courseHandler := api.NewCourseHandler(
+		courseService,
+	)
+
 	registrationHandler := api.NewRegistrationHandler(
 		registrationService,
 	)
 
+	resultHandler := api.NewResultHandler(
+		resultService,
+	)
 	// Prevent unused variable errors.
 	_ = clearanceService
-	_ = departmentHandler
-	_ = facultyHandler
 
 	// Register routes.
 	mux := registerRoutes(
@@ -94,6 +102,7 @@ func newServer(db *sql.DB) (*http.Server, *notification.Worker) {
 		facultyHandler,
 		registrationHandler,
 		resultHandler,
+		courseHandler,
 	)
 
 	server := &http.Server{

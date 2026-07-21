@@ -19,6 +19,7 @@ func registerRoutes(
 	facultyHandler *api.FacultyHandler,
 	registrationHandler *api.RegistrationHandler,
 	resultHandler *api.ResultHandler,
+	courseHandler *api.CourseHandler,
 ) *http.ServeMux {
 
 	mux := http.NewServeMux()
@@ -126,6 +127,49 @@ func registerRoutes(
 	mux.HandleFunc(
 		"/students/register-course",
 		registrationHandler.RegisterCourse,
+	)
+
+	// Courses
+	mux.Handle(
+		"/api/v1/courses",
+		authMiddleware.Authenticate(
+			http.HandlerFunc(courseHandler.List),
+		),
+	)
+
+	mux.Handle(
+		"/api/v1/courses/create",
+		authMiddleware.Authenticate(
+			http.HandlerFunc(courseHandler.Create),
+		),
+	)
+
+	mux.Handle(
+		"/api/v1/courses/get",
+		authMiddleware.Authenticate(
+			http.HandlerFunc(courseHandler.Get),
+		),
+	)
+
+	mux.Handle(
+		"/api/v1/courses/update",
+		authMiddleware.Authenticate(
+			http.HandlerFunc(courseHandler.Update),
+		),
+	)
+
+	mux.Handle(
+		"/api/v1/courses/delete",
+		authMiddleware.Authenticate(
+			http.HandlerFunc(courseHandler.Delete),
+		),
+	)
+
+	mux.Handle(
+		"/api/v1/courses/department",
+		authMiddleware.Authenticate(
+			http.HandlerFunc(courseHandler.ListByDepartment),
+		),
 	)
 
 	// Payments
