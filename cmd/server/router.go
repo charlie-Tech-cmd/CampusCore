@@ -18,9 +18,46 @@ func registerRoutes(
 	departmentHandler *api.DepartmentHandler,
 	facultyHandler *api.FacultyHandler,
 	registrationHandler *api.RegistrationHandler,
+	resultHandler *api.ResultHandler,
 ) *http.ServeMux {
 
 	mux := http.NewServeMux()
+
+	// Results
+	mux.Handle(
+		"/api/v1/results/submit",
+		authMiddleware.Authenticate(
+			http.HandlerFunc(resultHandler.Submit),
+		),
+	)
+
+	mux.Handle(
+		"/api/v1/results/student",
+		authMiddleware.Authenticate(
+			http.HandlerFunc(resultHandler.StudentResults),
+		),
+	)
+
+	mux.Handle(
+		"/api/v1/results/course",
+		authMiddleware.Authenticate(
+			http.HandlerFunc(resultHandler.CourseResults),
+		),
+	)
+
+	mux.Handle(
+		"/api/v1/results/update",
+		authMiddleware.Authenticate(
+			http.HandlerFunc(resultHandler.Update),
+		),
+	)
+
+	mux.Handle(
+		"/api/v1/results/delete",
+		authMiddleware.Authenticate(
+			http.HandlerFunc(resultHandler.Delete),
+		),
+	)
 
 	// Home
 	mux.HandleFunc("/", homeHandler)
