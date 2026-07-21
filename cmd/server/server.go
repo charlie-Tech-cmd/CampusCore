@@ -76,7 +76,10 @@ func newServer(db *sql.DB) (*http.Server, *notification.Worker) {
 		studentHandler,
 		lecturerHandler,
 		paymentHandler,
+		departmentHandler,
+		facultyHandler,
 	)
+
 	server := &http.Server{
 		Addr:         ":8080",
 		Handler:      middleware.Recovery(middleware.Logger(mux)),

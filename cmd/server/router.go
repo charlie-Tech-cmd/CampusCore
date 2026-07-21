@@ -15,6 +15,8 @@ func registerRoutes(
 	studentHandler *api.StudentHandler,
 	lecturerHandler *api.LecturerHandler,
 	paymentHandler *api.PaymentHandler,
+	departmentHandler *api.DepartmentHandler,
+	facultyHandler *api.FacultyHandler,
 ) *http.ServeMux {
 
 	mux := http.NewServeMux()
@@ -37,6 +39,15 @@ func registerRoutes(
 			http.HandlerFunc(authHandler.Me),
 		),
 	)
+
+	// Faculties
+	mux.Handle(
+		"/api/v1/faculties",
+		authMiddleware.Authenticate(
+			http.HandlerFunc(facultyHandler.List),
+		),
+	)
+
 	// Student
 	mux.Handle(
 		"/api/v1/student/courses/register",
@@ -94,6 +105,42 @@ func registerRoutes(
 			)(
 				http.HandlerFunc(lecturerHandler.AdvanceApproval),
 			),
+		),
+	)
+
+	// Departments
+	mux.Handle(
+		"/api/v1/departments",
+		authMiddleware.Authenticate(
+			http.HandlerFunc(departmentHandler.List),
+		),
+	)
+
+	mux.Handle(
+		"/api/v1/departments/create",
+		authMiddleware.Authenticate(
+			http.HandlerFunc(departmentHandler.Create),
+		),
+	)
+
+	mux.Handle(
+		"/api/v1/departments/get",
+		authMiddleware.Authenticate(
+			http.HandlerFunc(departmentHandler.Get),
+		),
+	)
+
+	mux.Handle(
+		"/api/v1/departments/update",
+		authMiddleware.Authenticate(
+			http.HandlerFunc(departmentHandler.Update),
+		),
+	)
+
+	mux.Handle(
+		"/api/v1/departments/delete",
+		authMiddleware.Authenticate(
+			http.HandlerFunc(departmentHandler.Delete),
 		),
 	)
 
