@@ -100,6 +100,139 @@ func (r *PostgresCourseRepository) FindByCode(code string) (*models.Course, erro
 	return &course, nil
 }
 
+// GetAll returns every course.
+func (r *PostgresCourseRepository) GetAll() ([]models.Course, error) {
+	query := `
+		SELECT
+			code,
+			title,
+			description,
+			credit_units,
+			department_id,
+			level,
+			semester,
+			max_capacity,
+			current_enrolled,
+			is_active
+		FROM courses
+		ORDER BY code;
+	`
+
+	rows, err := r.db.Query(query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to retrieve courses: %w", err)
+	}
+	defer rows.Close()
+
+	var courses []models.Course
+
+	for rows.Next() {
+		var course models.Course
+
+		if err := rows.Scan(
+			&course.Code,
+			&course.Title,
+			&course.Description,
+			&course.CreditUnits,
+			&course.DepartmentID,
+			&course.Level,
+			&course.Semester,
+			&course.MaxCapacity,
+			&course.CurrentEnrolled,
+			&course.IsActive,
+		); err != nil {
+			return nil, err
+		}
+
+		courses = append(courses, course)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return courses, nil
+}
+
+// GetByDepartment returns all courses belonging to a department.
+func (r *PostgresCourseRepository) GetByDepartment(departmentID int) ([]models.Course, error) {
+	query := `
+		SELECT
+			code,
+			title,
+			description,
+			credit_units,
+			department_id,
+			level,
+			semester,
+			max_capacity,
+			current_enrolled,
+			is_active
+		FROM courses
+		WHERE department_id = $1
+		ORDER BY code;
+	`
+
+	rows, err := r.db.Query(query, departmentID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to retrieve department courses: %w", err)
+	}
+	defer rows.Close()
+
+	var courses []models.Course
+
+	for rows.Next() {
+		var course models.Course
+
+		if err := rows.Scan(
+			&course.Code,
+			&course.Title,
+			&course.Description,
+			&course.CreditUnits,
+			&course.DepartmentID,
+			&course.Level,
+			&course.Semester,
+			&course.MaxCapacity,
+			&course.CurrentEnrolled,
+			&course.IsActive,
+		); err != nil {
+			return nil, err
+		}
+
+		courses = append(courses, course)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return courses, nil
+}
+
+// Delete removes a course.
+func (r *PostgresCourseRepository) Delete(code string) error {
+	query := `
+		DELETE FROM courses
+		WHERE code = $1;
+	`
+
+	result, err := r.db.Exec(query, code)
+	if err != nil {
+		return fmt.Errorf("failed to delete course: %w", err)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rowsAffected == 0 {
+		return errors.New("course not found")
+	}
+
+	return nil
+}
+
 // Update modifies an existing course.
 func (r *PostgresCourseRepository) Update(course *models.Course) error {
 	query := `
