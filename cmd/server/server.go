@@ -27,6 +27,8 @@ func newServer(db *sql.DB) (*http.Server, *notification.Worker) {
 	userRepo := repository.NewPostgresUserRepository(db)
 	govRepo := repository.NewPostgresGovernanceRepository(db)
 	finRepo := repository.NewPostgresFinancialRepository(db)
+	departmentRepo := repository.NewPostgresDepartmentRepository(db)
+	facultyRepo := repository.NewPostgresFacultyRepository(db)
 
 	// Services.
 	academicService := services.NewAcademicService(db)
@@ -34,11 +36,9 @@ func newServer(db *sql.DB) (*http.Server, *notification.Worker) {
 	clearanceService := services.NewClearanceService(finRepo)
 	paymentService := services.NewPaymentService(finRepo)
 	governanceService := governance.NewEngine(govRepo)
+	departmentService := services.NewDepartmentService(departmentRepo)
+	facultyService := services.NewFacultyService(facultyRepo)
 
-	// Prevent unused variable error until its endpoint is added.
-	_ = clearanceService
-
-	// Handlers.
 	authHandler := api.NewAuthHandler(userRepo, sessionManager)
 	refreshHandler := api.NewRefreshHandler()
 
@@ -54,6 +54,19 @@ func newServer(db *sql.DB) (*http.Server, *notification.Worker) {
 	paymentHandler := api.NewPaymentHandler(
 		paymentService,
 	)
+
+	departmentHandler := api.NewDepartmentHandler(
+		departmentService,
+	)
+
+	facultyHandler := api.NewFacultyHandler(
+		facultyService,
+	)
+
+	// Prevent unused variable errors.
+	_ = clearanceService
+	_ = departmentHandler
+	_ = facultyHandler
 
 	// Register routes.
 	mux := registerRoutes(
