@@ -17,6 +17,7 @@ func registerRoutes(
 	paymentHandler *api.PaymentHandler,
 	departmentHandler *api.DepartmentHandler,
 	facultyHandler *api.FacultyHandler,
+	registrationHandler *api.RegistrationHandler,
 ) *http.ServeMux {
 
 	mux := http.NewServeMux()
@@ -83,6 +84,11 @@ func registerRoutes(
 				http.HandlerFunc(studentHandler.UpdateProfile),
 			),
 		),
+	)
+
+	mux.HandleFunc(
+		"/students/register-course",
+		registrationHandler.RegisterCourse,
 	)
 
 	// Payments

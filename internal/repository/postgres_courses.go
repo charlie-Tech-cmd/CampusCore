@@ -99,3 +99,49 @@ func (r *PostgresCourseRepository) FindByCode(code string) (*models.Course, erro
 
 	return &course, nil
 }
+
+// Update modifies an existing course.
+func (r *PostgresCourseRepository) Update(course *models.Course) error {
+	query := `
+		UPDATE courses
+		SET
+			title = $2,
+			description = $3,
+			credit_units = $4,
+			department_id = $5,
+			level = $6,
+			semester = $7,
+			max_capacity = $8,
+			current_enrolled = $9,
+			is_active = $10
+		WHERE code = $1;
+	`
+
+	result, err := r.db.Exec(
+		query,
+		course.Code,
+		course.Title,
+		course.Description,
+		course.CreditUnits,
+		course.DepartmentID,
+		course.Level,
+		course.Semester,
+		course.MaxCapacity,
+		course.CurrentEnrolled,
+		course.IsActive,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to update course: %w", err)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rowsAffected == 0 {
+		return errors.New("course not found")
+	}
+
+	return nil
+}
