@@ -1,26 +1,37 @@
 package models
 
-import "time"
-
-// Transcript represents a student's academic transcript.
-type Transcript struct {
-	ID           int       `json:"id" db:"id"`
-	StudentID    string    `json:"student_id" db:"student_id"`
-	Session      string    `json:"session" db:"session"`
-	Semester     string    `json:"semester" db:"semester"`
-	CGPA         float64   `json:"cgpa" db:"cgpa"`
-	TotalCredits int       `json:"total_credits" db:"total_credits"`
-	Remarks      string    `json:"remarks" db:"remarks"`
-	GeneratedAt  time.Time `json:"generated_at" db:"generated_at"`
-	GeneratedBy  string    `json:"generated_by" db:"generated_by"`
+// TranscriptEntry represents one course on a student's transcript.
+type TranscriptEntry struct {
+	CourseCode  string  `json:"course_code"`
+	CourseTitle string  `json:"course_title"`
+	CreditUnits int     `json:"credit_units"`
+	Score       float64 `json:"score"`
+	Grade       string  `json:"grade"`
+	GradePoint  float64 `json:"grade_point"`
+	Session     string  `json:"session"`
+	Semester    string  `json:"semester"`
+	Level       int     `json:"level"`
 }
 
-// TranscriptRepository defines transcript persistence operations.
-type TranscriptRepository interface {
-	Create(transcript *Transcript) error
-	FindByID(id int) (*Transcript, error)
-	FindByStudent(studentID string) ([]Transcript, error)
-	List() ([]Transcript, error)
-	Update(transcript *Transcript) error
-	Delete(id int) error
+// SemesterTranscript represents a semester summary.
+type SemesterTranscript struct {
+	Session       string            `json:"session"`
+	Semester      string            `json:"semester"`
+	Level         int               `json:"level"`
+	Courses       []TranscriptEntry `json:"courses"`
+	TotalUnits    int               `json:"total_units"`
+	QualityPoints float64           `json:"quality_points"`
+	GPA           float64           `json:"gpa"`
+}
+
+// Transcript represents the student's complete academic record.
+type Transcript struct {
+	StudentID      string               `json:"student_id"`
+	StudentName    string               `json:"student_name"`
+	DepartmentName string               `json:"department_name"`
+	FacultyName    string               `json:"faculty_name"`
+	Semesters      []SemesterTranscript `json:"semesters"`
+	CGPA           float64              `json:"cgpa"`
+	TotalUnits     int                  `json:"total_units"`
+	ClassOfDegree  string               `json:"class_of_degree"`
 }
