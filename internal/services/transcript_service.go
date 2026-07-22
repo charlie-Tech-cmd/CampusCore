@@ -1,13 +1,21 @@
 package services
 
 import (
-	"campuscore/internal/models"
 	"errors"
+	"strings"
+	"time"
+
+	"campuscore/internal/academic"
+	"campuscore/internal/models"
 )
+
+type UserRepository interface {
+	FindByID(id string) (*models.User, error)
+}
 
 // TranscriptService generates student transcripts.
 type TranscriptService struct {
-	students    StudentRepository
+	users       UserRepository
 	courses     CourseRepository
 	results     ResultRepository
 	departments DepartmentRepository
@@ -16,15 +24,14 @@ type TranscriptService struct {
 
 // NewTranscriptService creates a transcript service.
 func NewTranscriptService(
-	students StudentRepository,
+	users UserRepository,
 	courses CourseRepository,
 	results ResultRepository,
 	departments DepartmentRepository,
 	faculties FacultyRepository,
 ) *TranscriptService {
-
 	return &TranscriptService{
-		students:    students,
+		users:       users,
 		courses:     courses,
 		results:     results,
 		departments: departments,
@@ -35,7 +42,7 @@ func NewTranscriptService(
 func (s *TranscriptService) GenerateTranscript(studentID string) (*models.Transcript, error) {
 
 	// Verify student exists.
-	student, err := s.students.FindByID(studentID)
+	student, err := s.users.FindByID(studentID)
 	if err != nil {
 		return nil, err
 	}
@@ -51,15 +58,46 @@ func (s *TranscriptService) GenerateTranscript(studentID string) (*models.Transc
 		return nil, errors.New("no academic results found")
 	}
 
-	_ = student
-	_ = results
+	var (
+		totalQualityPoints float64
+		totalCreditUnits   int
+	)
 
-	// TODO:
-	// Compute quality points.
-	// Compute GPA.
-	// Compute CGPA.
-	// Determine classification.
-	// Build transcript.
+	for _, result := range results {
+		totalQualityPoints += academic.CalculateQualityPoints(
+			result.GradePoint,
+			result.CreditUnits,
+		)
 
-	return nil, nil
+		totalCreditUnits += result.CreditUnits
+	}
+
+	gpa := academic.CalculateGPA(
+		totalQualityPoints,
+		totalCreditUnits,
+	)
+
+	classification := academic.ClassifyDegree(gpa)
+
+	transcript := &models.Transcript{
+		StudentID: student.ID,
+
+		StudentName: strings.TrimSpace(
+			student.Surname + " " +
+				student.FirstName + " " +
+				student.MiddleName,
+		),
+
+		MatricNumber: student.ID,
+
+		CGPA:           gpa,
+		Classification: classification,
+
+		Results: results,
+
+		GeneratedAt: time.Now(),
+	}
+
+	return transcript, nil
+
 }

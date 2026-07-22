@@ -1,5 +1,9 @@
 package models
 
+import (
+	"time"
+)
+
 // TranscriptEntry represents one course on a student's transcript.
 type TranscriptEntry struct {
 	CourseCode  string  `json:"course_code"`
@@ -24,14 +28,19 @@ type SemesterTranscript struct {
 	GPA           float64           `json:"gpa"`
 }
 
-// Transcript represents the student's complete academic record.
+// Transcript represents a student's academic transcript.
 type Transcript struct {
-	StudentID      string               `json:"student_id"`
-	StudentName    string               `json:"student_name"`
-	DepartmentName string               `json:"department_name"`
-	FacultyName    string               `json:"faculty_name"`
-	Semesters      []SemesterTranscript `json:"semesters"`
-	CGPA           float64              `json:"cgpa"`
-	TotalUnits     int                  `json:"total_units"`
-	ClassOfDegree  string               `json:"class_of_degree"`
+	StudentID    string `json:"student_id"`
+	StudentName  string `json:"student_name"`
+	MatricNumber string `json:"matric_number"`
+
+	DepartmentName string `json:"department_name"`
+	FacultyName    string `json:"faculty_name"`
+
+	CGPA           float64 `json:"cgpa"`
+	Classification string  `json:"classification"`
+
+	Results []Result `json:"results"`
+
+	GeneratedAt time.Time `json:"generated_at"`
 }
