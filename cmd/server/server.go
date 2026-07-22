@@ -32,6 +32,7 @@ func newServer(db *sql.DB) (*http.Server, *notification.Worker) {
 	enrollmentRepo := repository.NewPostgresEnrollmentRepository(db)
 	courseRepo := repository.NewPostgresCourseRepository(db)
 	resultRepo := repository.NewPostgresResultRepository(db)
+	attendanceRepo := repository.NewPostgresAttendanceRepository(db)
 
 	// Services.
 	academicService := services.NewAcademicService(db)
@@ -50,6 +51,10 @@ func newServer(db *sql.DB) (*http.Server, *notification.Worker) {
 		enrollmentRepo,
 	)
 	resultService := services.NewResultService(resultRepo)
+
+	attendanceService := services.NewAttendanceService(
+		attendanceRepo,
+	)
 
 	// Handlers.
 	authHandler := api.NewAuthHandler(userRepo, sessionManager)
@@ -87,6 +92,11 @@ func newServer(db *sql.DB) (*http.Server, *notification.Worker) {
 	resultHandler := api.NewResultHandler(
 		resultService,
 	)
+
+	attendanceHandler := api.NewAttendanceHandler(
+		attendanceService,
+	)
+
 	// Prevent unused variable errors.
 	_ = clearanceService
 
@@ -103,8 +113,8 @@ func newServer(db *sql.DB) (*http.Server, *notification.Worker) {
 		registrationHandler,
 		resultHandler,
 		courseHandler,
+		attendanceHandler,
 	)
-
 	server := &http.Server{
 		Addr:         ":8080",
 		Handler:      middleware.Recovery(middleware.Logger(mux)),

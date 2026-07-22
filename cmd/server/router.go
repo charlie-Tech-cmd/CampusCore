@@ -20,6 +20,8 @@ func registerRoutes(
 	registrationHandler *api.RegistrationHandler,
 	resultHandler *api.ResultHandler,
 	courseHandler *api.CourseHandler,
+	attendanceHandler *api.AttendanceHandler,
+
 ) *http.ServeMux {
 
 	mux := http.NewServeMux()
@@ -127,6 +129,86 @@ func registerRoutes(
 	mux.HandleFunc(
 		"/students/register-course",
 		registrationHandler.RegisterCourse,
+	)
+
+	// Attendance
+	mux.Handle(
+		"/api/v1/attendance/mark",
+		authMiddleware.Authenticate(
+			authMiddleware.RequireRole(
+				"lecturer",
+				"HOD",
+				"dean",
+				"admin",
+			)(
+				http.HandlerFunc(attendanceHandler.MarkAttendance),
+			),
+		),
+	)
+
+	mux.Handle(
+		"/api/v1/attendance/get",
+		authMiddleware.Authenticate(
+			http.HandlerFunc(attendanceHandler.GetAttendance),
+		),
+	)
+
+	mux.Handle(
+		"/api/v1/attendance/list",
+		authMiddleware.Authenticate(
+			authMiddleware.RequireRole(
+				"lecturer",
+				"HOD",
+				"dean",
+				"admin",
+			)(
+				http.HandlerFunc(attendanceHandler.ListAttendance),
+			),
+		),
+	)
+
+	mux.Handle(
+		"/api/v1/attendance/student",
+		authMiddleware.Authenticate(
+			http.HandlerFunc(attendanceHandler.ListStudentAttendance),
+		),
+	)
+
+	mux.Handle(
+		"/api/v1/attendance/course",
+		authMiddleware.Authenticate(
+			http.HandlerFunc(attendanceHandler.ListCourseAttendance),
+		),
+	)
+
+	mux.Handle(
+		"/api/v1/attendance/lecturer",
+		authMiddleware.Authenticate(
+			http.HandlerFunc(attendanceHandler.ListLecturerAttendance),
+		),
+	)
+
+	mux.Handle(
+		"/api/v1/attendance/update",
+		authMiddleware.Authenticate(
+			authMiddleware.RequireRole(
+				"lecturer",
+				"HOD",
+				"dean",
+				"admin",
+			)(
+				http.HandlerFunc(attendanceHandler.UpdateAttendance),
+			),
+		),
+	)
+
+	mux.Handle(
+		"/api/v1/attendance/delete",
+		authMiddleware.Authenticate(
+			authMiddleware.RequireRole("admin")(
+				http.HandlerFunc(attendanceHandler.DeleteAttendance),
+			),
+		),
 	)
 
 	// Courses
