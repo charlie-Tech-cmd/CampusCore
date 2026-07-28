@@ -2,67 +2,120 @@ package api
 
 import (
 	"context"
-	"errors"
-	"fmt"
+	"encoding/json"
+	"net/http"
+	"strconv"
 
 	"campuscore/internal/models"
 )
 
-// ClearanceService handles student clearance operations.
-type ClearanceService struct {
-	repo models.FinancialRepository
+type ClearanceService interface {
+	GetStudentClearance(
+		ctx context.Context,
+		studentID string,
+	) ([]models.StudentClearance, error)
+
+	UpdateClearance(
+		ctx context.Context,
+		studentID string,
+		officeID int,
+		status models.ClearanceStatus,
+		staffID string,
+	) error
+
+	IsStudentCleared(
+		ctx context.Context,
+		studentID string,
+	) (bool, error)
 }
 
-// NewClearanceService creates a new ClearanceService.
-func NewClearanceService(r models.FinancialRepository) *ClearanceService {
-	return &ClearanceService{
-		repo: r,
+type ClearanceHandler struct {
+	service ClearanceService
+}
+
+func NewClearanceHandler(service ClearanceService) *ClearanceHandler {
+	return &ClearanceHandler{
+		service: service,
 	}
 }
 
-// GetChecklistStatus returns a student's clearance checklist.
-func (s *ClearanceService) GetChecklistStatus(ctx context.Context, studentID string) ([]models.StudentClearance, error) {
+func (h *ClearanceHandler) GetStudentClearance(
+	w http.ResponseWriter,
+	r *http.Request,
+) {
+
+	studentID := r.URL.Query().Get("student_id")
 	if studentID == "" {
-		return nil, errors.New("student ID is required")
+		http.Error(w, "student_id is required", http.StatusBadRequest)
+		return
 	}
 
-	return s.repo.GetStudentClearanceStatus(ctx, studentID)
-}
-
-// ProcessOfficeSignOff updates the clearance status for an office.
-func (s *ClearanceService) ProcessOfficeSignOff(
-	ctx context.Context,
-	studentID string,
-	officeID int,
-	status string,
-	staffID string,
-) error {
-
-	if studentID == "" {
-		return errors.New("student ID is required")
-	}
-
-	if staffID == "" {
-		return errors.New("staff ID is required")
-	}
-
-	var clearanceStatus models.ClearanceStatus
-
-	switch models.ClearanceStatus(status) {
-	case models.ClearancePending,
-		models.ClearanceSubmitted,
-		models.ClearanceCleared:
-		clearanceStatus = models.ClearanceStatus(status)
-
-	default:
-		return fmt.Errorf("invalid clearance status: %s", status)
-	}
-
-	return s.repo.UpdateClearanceStatus(
-		ctx,
+	clearances, err := h.service.GetStudentClearance(
+		context.Background(),
 		studentID,
-		officeID,
-		clearanceStatus,
-		staffID,
 	)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(clearances)
+}
+
+func (h *ClearanceHandler) IsStudentCleared(
+	w http.ResponseWriter,
+	r *http.Request,
+) {
+
+	studentID := r.URL.Query().Get("student_id")
+	if studentID == "" {
+		http.Error(w, "student_id is required", http.StatusBadRequest)
+		return
+	}
+
+	cleared, err := h.service.IsStudentCleared(
+		context.Background(),
+		studentID,
+	)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	json.NewEncoder(w).Encode(map[string]bool{
+		"cleared": cleared,
+	})
+}
+
+func (h *ClearanceHandler) UpdateClearance(
+	w http.ResponseWriter,
+	r *http.Request,
+) {
+
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	officeID, err := strconv.Atoi(r.FormValue("office_id"))
+	if err != nil {
+		http.Error(w, "invalid office_id", http.StatusBadRequest)
+		return
+	}
+
+	err = h.service.UpdateClearance(
+		context.Background(),
+		r.FormValue("student_id"),
+		officeID,
+		models.ClearanceStatus(r.FormValue("status")),
+		r.FormValue("staff_id"),
+	)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
 }

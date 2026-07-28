@@ -6,7 +6,9 @@ WHERE office_name IN (
     'Faculty',
     'Library',
     'Bursary',
+    'Security',
     'Student Affairs'
+    
 );
 
 COMMIT;

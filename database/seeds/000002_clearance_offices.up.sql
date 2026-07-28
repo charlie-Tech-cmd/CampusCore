@@ -9,6 +9,7 @@ VALUES
     ('Faculty', TRUE),
     ('Library', TRUE),
     ('Bursary', TRUE),
+    ('Security',TRUE),
     ('Student Affairs', TRUE)
 
 ON CONFLICT (office_name)
