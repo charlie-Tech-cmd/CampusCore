@@ -11,13 +11,19 @@ import (
 
 // PaymentService handles payment operations.
 type PaymentService struct {
-	repo models.FinancialRepository
+	repo         models.FinancialRepository
+	notification *NotificationService
 }
 
 // NewPaymentService creates a PaymentService.
-func NewPaymentService(repo models.FinancialRepository) *PaymentService {
+func NewPaymentService(
+	repo models.FinancialRepository,
+	notification *NotificationService,
+) *PaymentService {
+
 	return &PaymentService{
-		repo: repo,
+		repo:         repo,
+		notification: notification,
 	}
 }
 
@@ -69,6 +75,16 @@ func (s *PaymentService) ProcessPayment(
 
 	if err := s.repo.RecordPayment(ctx, payment); err != nil {
 		return fmt.Errorf("failed to save payment: %w", err)
+	}
+
+	if s.notification != nil {
+		if err := s.notification.NotifyPayment(
+			studentID,
+			amount,
+		); err != nil {
+			// Don't fail the payment because a notification failed.
+			fmt.Printf("notification error: %v\n", err)
+		}
 	}
 
 	return nil

@@ -11,7 +11,10 @@ import (
 func TestNewPaymentService(t *testing.T) {
 	repo := &mockFinancialRepository{}
 
-	service := NewPaymentService(repo)
+	service := NewPaymentService(
+		repo,
+		nil,
+	)
 
 	if service == nil {
 		t.Fatal("expected PaymentService, got nil")
@@ -59,7 +62,10 @@ func TestProcessPayment_Success(t *testing.T) {
 		},
 	}
 
-	service := NewPaymentService(repo)
+	service := NewPaymentService(
+		repo,
+		nil,
+	)
 
 	err := service.ProcessPayment(
 		context.Background(),
@@ -130,7 +136,7 @@ func TestProcessPayment_ValidationErrors(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			service := NewPaymentService(&mockFinancialRepository{})
+			service := NewPaymentService(&mockFinancialRepository{}, nil)
 
 			err := service.ProcessPayment(
 				context.Background(),
@@ -159,7 +165,10 @@ func TestProcessPayment_DuplicateReference(t *testing.T) {
 		},
 	}
 
-	service := NewPaymentService(repo)
+	service := NewPaymentService(
+		repo,
+		nil,
+	)
 
 	err := service.ProcessPayment(
 		context.Background(),
@@ -188,7 +197,10 @@ func TestProcessPayment_CheckPaymentExistsError(t *testing.T) {
 		},
 	}
 
-	service := NewPaymentService(repo)
+	service := NewPaymentService(
+		repo,
+		nil,
+	)
 
 	err := service.ProcessPayment(
 		context.Background(),
@@ -220,7 +232,10 @@ func TestProcessPayment_RecordPaymentError(t *testing.T) {
 		},
 	}
 
-	service := NewPaymentService(repo)
+	service := NewPaymentService(
+		repo,
+		nil,
+	)
 
 	err := service.ProcessPayment(
 		context.Background(),
@@ -271,7 +286,10 @@ func TestProcessPayment_TrimsInput(t *testing.T) {
 		},
 	}
 
-	service := NewPaymentService(repo)
+	service := NewPaymentService(
+		repo,
+		nil,
+	)
 
 	err := service.ProcessPayment(
 		context.Background(),

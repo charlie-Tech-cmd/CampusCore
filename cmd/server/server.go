@@ -33,12 +33,21 @@ func newServer(db *sql.DB) (*http.Server, *notification.Worker) {
 	courseRepo := repository.NewPostgresCourseRepository(db)
 	resultRepo := repository.NewPostgresResultRepository(db)
 	attendanceRepo := repository.NewPostgresAttendanceRepository(db)
+	notificationRepo := repository.NewPostgresNotificationRepository(db)
+
+	notificationService := services.NewNotificationService(
+		notificationRepo,
+		worker,
+	)
 
 	// Services.
 	academicService := services.NewAcademicService(db)
 	ticketService := services.NewTicketService(finRepo)
 	clearanceService := services.NewClearanceService(finRepo)
-	paymentService := services.NewPaymentService(finRepo)
+	paymentService := services.NewPaymentService(
+		finRepo,
+		notificationService,
+	)
 	governanceService := governance.NewEngine(govRepo)
 
 	departmentService := services.NewDepartmentService(departmentRepo)
