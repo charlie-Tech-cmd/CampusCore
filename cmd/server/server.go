@@ -35,6 +35,7 @@ func newServer(db *sql.DB) (*http.Server, *notification.Worker) {
 	attendanceRepo := repository.NewPostgresAttendanceRepository(db)
 	notificationRepo := repository.NewPostgresNotificationRepository(db)
 	reportingRepo := repository.NewPostgresReportingRepository(db)
+	admissionRepo := repository.NewPostgresAdmissionRepository(db)
 
 	notificationService := services.NewNotificationService(
 		notificationRepo,
@@ -67,6 +68,10 @@ func newServer(db *sql.DB) (*http.Server, *notification.Worker) {
 	)
 	reportingService := services.NewReportingService(
 		reportingRepo,
+	)
+	admissionService := services.NewAdmissionService(
+		admissionRepo,
+		notificationService,
 	)
 
 	// Handlers.
@@ -114,6 +119,10 @@ func newServer(db *sql.DB) (*http.Server, *notification.Worker) {
 		reportingService,
 	)
 
+	admissionHandler := api.NewAdmissionHandler(
+		admissionService,
+	)
+
 	// Prevent unused variable errors.
 	_ = clearanceService
 
@@ -131,6 +140,7 @@ func newServer(db *sql.DB) (*http.Server, *notification.Worker) {
 		resultHandler,
 		courseHandler,
 		attendanceHandler,
+		admissionHandler,
 	)
 
 	mux.HandleFunc(
@@ -151,6 +161,31 @@ func newServer(db *sql.DB) (*http.Server, *notification.Worker) {
 	mux.HandleFunc(
 		"GET /reports/clearance",
 		reportingHandler.GetClearanceSummary,
+	)
+
+	mux.HandleFunc(
+		"POST /admission/apply",
+		admissionHandler.SubmitApplication,
+	)
+
+	mux.HandleFunc(
+		"GET /admission",
+		admissionHandler.ListApplications,
+	)
+
+	mux.HandleFunc(
+		"GET /admission/application",
+		admissionHandler.GetApplication,
+	)
+
+	mux.HandleFunc(
+		"POST /admission/approve",
+		admissionHandler.ApproveApplication,
+	)
+
+	mux.HandleFunc(
+		"POST /admission/reject",
+		admissionHandler.RejectApplication,
 	)
 
 	server := &http.Server{

@@ -21,7 +21,7 @@ func registerRoutes(
 	resultHandler *api.ResultHandler,
 	courseHandler *api.CourseHandler,
 	attendanceHandler *api.AttendanceHandler,
-
+	admissionHandler *api.AdmissionHandler,
 ) *http.ServeMux {
 
 	mux := http.NewServeMux()
