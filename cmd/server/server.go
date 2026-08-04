@@ -34,6 +34,7 @@ func newServer(db *sql.DB) (*http.Server, *notification.Worker) {
 	resultRepo := repository.NewPostgresResultRepository(db)
 	attendanceRepo := repository.NewPostgresAttendanceRepository(db)
 	notificationRepo := repository.NewPostgresNotificationRepository(db)
+	reportingRepo := repository.NewPostgresReportingRepository(db)
 
 	notificationService := services.NewNotificationService(
 		notificationRepo,
@@ -63,6 +64,9 @@ func newServer(db *sql.DB) (*http.Server, *notification.Worker) {
 
 	attendanceService := services.NewAttendanceService(
 		attendanceRepo,
+	)
+	reportingService := services.NewReportingService(
+		reportingRepo,
 	)
 
 	// Handlers.
@@ -106,6 +110,10 @@ func newServer(db *sql.DB) (*http.Server, *notification.Worker) {
 		attendanceService,
 	)
 
+	reportingHandler := api.NewReportingHandler(
+		reportingService,
+	)
+
 	// Prevent unused variable errors.
 	_ = clearanceService
 
@@ -124,6 +132,27 @@ func newServer(db *sql.DB) (*http.Server, *notification.Worker) {
 		courseHandler,
 		attendanceHandler,
 	)
+
+	mux.HandleFunc(
+		"GET /reports/enrollment",
+		reportingHandler.GetEnrollmentSummary,
+	)
+
+	mux.HandleFunc(
+		"GET /reports/payments",
+		reportingHandler.GetPaymentSummary,
+	)
+
+	mux.HandleFunc(
+		"GET /reports/academic",
+		reportingHandler.GetAcademicPerformanceSummary,
+	)
+
+	mux.HandleFunc(
+		"GET /reports/clearance",
+		reportingHandler.GetClearanceSummary,
+	)
+
 	server := &http.Server{
 		Addr:         ":8080",
 		Handler:      middleware.Recovery(middleware.Logger(mux)),
