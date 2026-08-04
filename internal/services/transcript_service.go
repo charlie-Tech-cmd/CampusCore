@@ -2,6 +2,7 @@ package services
 
 import (
 	"errors"
+	"strconv"
 	"strings"
 	"time"
 
@@ -79,6 +80,8 @@ func (s *TranscriptService) GenerateTranscript(studentID string) (*models.Transc
 
 	classification := academic.ClassifyDegree(gpa)
 
+	semesters := s.buildSemesterTranscripts(results)
+
 	transcript := &models.Transcript{
 		StudentID: student.ID,
 
@@ -93,11 +96,81 @@ func (s *TranscriptService) GenerateTranscript(studentID string) (*models.Transc
 		CGPA:           gpa,
 		Classification: classification,
 
-		Results: results,
-
+		Semesters:   semesters,
 		GeneratedAt: time.Now(),
 	}
 
 	return transcript, nil
 
+}
+
+func (s *TranscriptService) buildSemesterTranscripts(
+	results []models.Result,
+) []models.SemesterTranscript {
+
+	semesterMap := make(map[string]*models.SemesterTranscript)
+
+	for _, result := range results {
+
+		course, err := s.courses.FindByCode(result.CourseCode)
+		if err != nil {
+			// Skip results whose course cannot be found.
+			continue
+		}
+
+		key := result.Session + "-" +
+			result.Semester + "-" +
+			strconv.Itoa(course.Level)
+
+		semester, exists := semesterMap[key]
+		if !exists {
+			semester = &models.SemesterTranscript{
+				Session:  result.Session,
+				Semester: result.Semester,
+				Level:    course.Level,
+			}
+
+			semesterMap[key] = semester
+		}
+
+		entry := models.TranscriptEntry{
+			CourseCode:  result.CourseCode,
+			CourseTitle: course.Title,
+			CreditUnits: result.CreditUnits,
+			Score:       result.Score,
+			Grade:       result.Grade,
+			GradePoint:  result.GradePoint,
+			Session:     result.Session,
+			Semester:    result.Semester,
+			Level:       course.Level,
+		}
+
+		semester.Courses = append(
+			semester.Courses,
+			entry,
+		)
+
+		semester.TotalUnits += result.CreditUnits
+
+		semester.QualityPoints += academic.CalculateQualityPoints(
+			result.GradePoint,
+			result.CreditUnits,
+		)
+	}
+
+	var semesters []models.SemesterTranscript
+
+	for _, semester := range semesterMap {
+		semester.GPA = academic.CalculateGPA(
+			semester.QualityPoints,
+			semester.TotalUnits,
+		)
+
+		semesters = append(
+			semesters,
+			*semester,
+		)
+	}
+
+	return semesters
 }

@@ -36,11 +36,19 @@ type Transcript struct {
 
 	DepartmentName string `json:"department_name"`
 	FacultyName    string `json:"faculty_name"`
+	Programme      string `json:"programme"`
+
+	AdmissionSession  string `json:"admission_session"`
+	GraduationSession string `json:"graduation_session"`
 
 	CGPA           float64 `json:"cgpa"`
 	Classification string  `json:"classification"`
 
-	Results []Result `json:"results"`
+	Semesters []SemesterTranscript `json:"results"`
 
 	GeneratedAt time.Time `json:"generated_at"`
+
+	TranscriptNumber string    `json:"transcript_number"`
+	IssuedAt         time.Time `json:"issued_at"`
+	Verified         bool      `json:"verified"`
 }
