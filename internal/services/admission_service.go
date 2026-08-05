@@ -119,6 +119,20 @@ func (s *AdmissionService) ApproveApplication(
 		return err
 	}
 
+	if s.billing != nil {
+		err := s.billing.GenerateInvoice(
+			application.ApplicationNo,
+			"applicant",
+			"acceptance_fee",
+			application.Session,
+			application.AcceptanceFeeAmount,
+			time.Now().AddDate(0, 0, 14),
+		)
+		if err != nil {
+			return err
+		}
+	}
+
 	if s.notification != nil {
 
 		if s.notification != nil {
