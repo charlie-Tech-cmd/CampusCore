@@ -107,3 +107,16 @@ func (s *NotificationService) NotifyTranscriptReady(
 		models.NotificationTranscript,
 	)
 }
+
+// NotifyAdmissionApproved informs an applicant that admission has been approved.
+func (s *NotificationService) NotifyAdmissionApproved(
+	userID string,
+) error {
+
+	return s.CreateNotification(
+		userID,
+		"Admission Approved",
+		"Congratulations! Your admission has been approved. Please proceed to pay your acceptance fee to continue your onboarding process.",
+		models.NotificationAdmission,
+	)
+}

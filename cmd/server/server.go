@@ -36,6 +36,11 @@ func newServer(db *sql.DB) (*http.Server, *notification.Worker) {
 	notificationRepo := repository.NewPostgresNotificationRepository(db)
 	reportingRepo := repository.NewPostgresReportingRepository(db)
 	admissionRepo := repository.NewPostgresAdmissionRepository(db)
+	billingRepo := repository.NewPostgresBillingRepository(db)
+
+	billingService := services.NewBillingService(
+		billingRepo,
+	)
 
 	notificationService := services.NewNotificationService(
 		notificationRepo,
@@ -72,6 +77,7 @@ func newServer(db *sql.DB) (*http.Server, *notification.Worker) {
 	admissionService := services.NewAdmissionService(
 		admissionRepo,
 		notificationService,
+		billingService,
 	)
 
 	// Handlers.
@@ -125,6 +131,7 @@ func newServer(db *sql.DB) (*http.Server, *notification.Worker) {
 
 	// Prevent unused variable errors.
 	_ = clearanceService
+	_ = billingService
 
 	// Register routes.
 	mux := registerRoutes(

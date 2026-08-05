@@ -3,24 +3,39 @@ package services
 import (
 	"errors"
 	"strings"
+	"time"
 
 	"campuscore/internal/models"
 )
 
+type BillingManager interface {
+	GenerateInvoice(
+		ownerID string,
+		ownerType string,
+		feeType string,
+		session string,
+		amount float64,
+		dueDate time.Time,
+	) error
+}
+
 type AdmissionService struct {
 	repo         models.AdmissionRepository
 	notification *NotificationService
+	billing      BillingManager
 }
 
 // NewAdmissionService creates a new admission service.
 func NewAdmissionService(
 	repo models.AdmissionRepository,
 	notification *NotificationService,
+	billing BillingManager,
 ) *AdmissionService {
 
 	return &AdmissionService{
 		repo:         repo,
 		notification: notification,
+		billing:      billing,
 	}
 }
 
@@ -97,6 +112,22 @@ func (s *AdmissionService) ApproveApplication(
 	err := s.repo.ApproveApplication(applicationNo)
 	if err != nil {
 		return err
+	}
+
+	application, err := s.repo.FindByApplicationNo(applicationNo)
+	if err != nil {
+		return err
+	}
+
+	if s.notification != nil {
+
+		if s.notification != nil {
+			if err := s.notification.NotifyAdmissionApproved(
+				application.Email,
+			); err != nil {
+				return err
+			}
+		}
 	}
 
 	// Notification integration will come next.

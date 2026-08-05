@@ -11,6 +11,7 @@ const (
 	NotificationTranscript   NotificationType = "transcript"
 	NotificationResult       NotificationType = "result"
 	NotificationAnnouncement NotificationType = "announcement"
+	NotificationAdmission    NotificationType = "admission"
 )
 
 // Notification represents a user notification stored in the system.
