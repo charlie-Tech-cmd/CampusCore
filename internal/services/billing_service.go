@@ -2,6 +2,7 @@ package services
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 	"time"
 
@@ -54,17 +55,29 @@ func (s *BillingService) GenerateInvoice(
 		return errors.New("amount must be greater than zero")
 	}
 
+	invoiceNumber := s.generateInvoiceNumber()
 	invoice := &models.Invoice{
+		InvoiceNumber: invoiceNumber,
+
 		OwnerID:   ownerID,
 		OwnerType: ownerType,
 		FeeType:   feeType,
 		Session:   session,
 		Amount:    amount,
-		Status:    models.InvoicePending,
+
+		Status: models.InvoicePending,
+
 		DueDate:   dueDate,
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	}
-
 	return s.repo.CreateInvoice(invoice)
+}
+
+func (s *BillingService) generateInvoiceNumber() string {
+	return fmt.Sprintf(
+		"INV-%d-%06d",
+		time.Now().Year(),
+		time.Now().Unix()%1000000,
+	)
 }
