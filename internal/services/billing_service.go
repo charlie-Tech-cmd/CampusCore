@@ -81,3 +81,60 @@ func (s *BillingService) generateInvoiceNumber() string {
 		time.Now().Unix()%1000000,
 	)
 }
+
+func (s *BillingService) GetInvoiceByNumber(
+	invoiceNumber string,
+) (*models.Invoice, error) {
+
+	invoiceNumber = strings.TrimSpace(invoiceNumber)
+
+	if invoiceNumber == "" {
+		return nil, errors.New("invoice number is required")
+	}
+
+	return s.repo.FindInvoiceByNumber(invoiceNumber)
+}
+
+func (s *BillingService) GetOwnerInvoices(
+	ownerID string,
+	ownerType string,
+) ([]models.Invoice, error) {
+
+	ownerID = strings.TrimSpace(ownerID)
+	ownerType = strings.TrimSpace(strings.ToLower(ownerType))
+
+	if ownerID == "" {
+		return nil, errors.New("owner ID is required")
+	}
+
+	if ownerType == "" {
+		return nil, errors.New("owner type is required")
+	}
+
+	return s.repo.FindInvoicesByOwner(
+		ownerID,
+		ownerType,
+	)
+}
+
+func (s *BillingService) GetOutstandingInvoices(
+	ownerID string,
+	ownerType string,
+) ([]models.Invoice, error) {
+
+	ownerID = strings.TrimSpace(ownerID)
+	ownerType = strings.TrimSpace(strings.ToLower(ownerType))
+
+	if ownerID == "" {
+		return nil, errors.New("owner ID is required")
+	}
+
+	if ownerType == "" {
+		return nil, errors.New("owner type is required")
+	}
+
+	return s.repo.FindOutstandingInvoices(
+		ownerID,
+		ownerType,
+	)
+}

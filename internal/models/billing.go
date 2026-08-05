@@ -56,4 +56,18 @@ type BillingRepository interface {
 	MarkInvoicePaid(
 		id int,
 	) error
+
+	FindInvoiceByNumber(
+		invoiceNumber string,
+	) (*Invoice, error)
+
+	FindInvoicesByOwner(
+		ownerID string,
+		ownerType string,
+	) ([]Invoice, error)
+
+	FindOutstandingInvoices(
+		ownerID string,
+		ownerType string,
+	) ([]Invoice, error)
 }

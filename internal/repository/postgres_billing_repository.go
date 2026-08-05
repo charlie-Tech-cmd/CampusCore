@@ -54,3 +54,26 @@ func (r *PostgresBillingRepository) MarkInvoicePaid(
 
 	return nil
 }
+
+func (r *PostgresBillingRepository) FindInvoiceByNumber(
+	invoiceNumber string,
+) (*models.Invoice, error) {
+
+	return nil, nil
+}
+
+func (r *PostgresBillingRepository) FindInvoicesByOwner(
+	ownerID string,
+	ownerType string,
+) ([]models.Invoice, error) {
+
+	return nil, nil
+}
+
+func (r *PostgresBillingRepository) FindOutstandingInvoices(
+	ownerID string,
+	ownerType string,
+) ([]models.Invoice, error) {
+
+	return nil, nil
+}
