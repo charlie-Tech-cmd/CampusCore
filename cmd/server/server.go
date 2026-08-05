@@ -37,6 +37,7 @@ func newServer(db *sql.DB) (*http.Server, *notification.Worker) {
 	reportingRepo := repository.NewPostgresReportingRepository(db)
 	admissionRepo := repository.NewPostgresAdmissionRepository(db)
 	billingRepo := repository.NewPostgresBillingRepository(db)
+	reportRepo := repository.NewPostgresReportRepository(db)
 
 	billingService := services.NewBillingService(
 		billingRepo,
@@ -79,6 +80,7 @@ func newServer(db *sql.DB) (*http.Server, *notification.Worker) {
 		notificationService,
 		billingService,
 	)
+	reportService := services.NewReportService(reportRepo)
 
 	// Handlers.
 	authHandler := api.NewAuthHandler(userRepo, sessionManager)
@@ -128,6 +130,9 @@ func newServer(db *sql.DB) (*http.Server, *notification.Worker) {
 	admissionHandler := api.NewAdmissionHandler(
 		admissionService,
 	)
+
+	reportHandler := api.NewReportHandler(
+		reportService)
 
 	// Prevent unused variable errors.
 	_ = clearanceService
@@ -193,6 +198,11 @@ func newServer(db *sql.DB) (*http.Server, *notification.Worker) {
 	mux.HandleFunc(
 		"POST /admission/reject",
 		admissionHandler.RejectApplication,
+	)
+
+	mux.HandleFunc(
+		"/POST/reports/dashboard",
+		reportHandler.DashboardSummary,
 	)
 
 	server := &http.Server{

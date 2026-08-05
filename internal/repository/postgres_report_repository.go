@@ -24,5 +24,54 @@ func (r *PostgresReportRepository) GetDashboardSummary() (
 	error,
 ) {
 
-	return &models.DashboardSummary{}, nil
+	summary := &models.DashboardSummary{}
+
+	err := r.db.QueryRow(`
+		SELECT COUNT(*)
+		FROM users
+		WHERE role = 'student'
+	`).Scan(&summary.TotalStudents)
+
+	if err != nil {
+		return nil, err
+	}
+
+	err = r.db.QueryRow(`
+	SELECT COUNT(*)
+	FROM admission_applications
+`).Scan(&summary.TotalApplicants)
+
+	if err != nil {
+		return nil, err
+	}
+
+	err = r.db.QueryRow(`
+	SELECT COUNT(*)
+	FROM departments
+`).Scan(&summary.TotalDepartments)
+
+	if err != nil {
+		return nil, err
+	}
+
+	err = r.db.QueryRow(`
+	SELECT COUNT(*)
+	FROM courses
+`).Scan(&summary.TotalCourses)
+
+	if err != nil {
+		return nil, err
+	}
+
+	err = r.db.QueryRow(`
+	SELECT COALESCE(AVG(gp), 0)
+	FROM results
+	WHERE gp IS NOT NULL
+`).Scan(&summary.AverageCGPA)
+
+	if err != nil {
+		return nil, err
+	}
+	return summary, nil
+
 }
