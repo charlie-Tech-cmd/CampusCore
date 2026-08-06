@@ -8,25 +8,17 @@ import (
 
 const MaxSemesterCredits = 24
 
-type EnrollmentRepository interface {
-	Register(enrollment *models.Enrollment) error
-	FindByStudent(studentID string) ([]models.Enrollment, error)
-	FindByCourse(courseCode string) ([]models.Enrollment, error)
-	UpdateStatus(studentID, courseCode, status string) error
-	Delete(studentID, courseCode string) error
-}
-
 type RegistrationService struct {
 	students    models.UserRepository
 	courses     models.CourseRepository
-	enrollments EnrollmentRepository
+	enrollments models.EnrollmentRepository
 }
 
 // NewRegistrationService creates a registration service.
 func NewRegistrationService(
 	students models.UserRepository,
 	courses models.CourseRepository,
-	enrollments EnrollmentRepository,
+	enrollments models.EnrollmentRepository,
 ) *RegistrationService {
 	return &RegistrationService{
 		students:    students,

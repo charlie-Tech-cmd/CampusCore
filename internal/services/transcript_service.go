@@ -15,8 +15,8 @@ type TranscriptService struct {
 	users       models.UserRepository
 	courses     models.CourseRepository
 	results     models.ResultRepository
-	departments DepartmentRepository
-	faculties   FacultyRepository
+	departments models.DepartmentRepository
+	faculties   models.FacultyRepository
 }
 
 // NewTranscriptService creates a transcript service.
@@ -24,8 +24,8 @@ func NewTranscriptService(
 	users models.UserRepository,
 	courses models.CourseRepository,
 	results models.ResultRepository,
-	departments DepartmentRepository,
-	faculties FacultyRepository,
+	departments models.DepartmentRepository,
+	faculties models.FacultyRepository,
 ) *TranscriptService {
 	return &TranscriptService{
 		users:       users,

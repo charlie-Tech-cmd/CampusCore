@@ -4,23 +4,15 @@ import (
 	"campuscore/internal/models"
 )
 
-// FacultyRepository defines the persistence contract required by the service.
-type FacultyRepository interface {
-	Create(*models.Faculty) error
-	FindByID(int) (*models.Faculty, error)
-	FindByCode(string) (*models.Faculty, error)
-	List() ([]models.Faculty, error)
-	Update(*models.Faculty) error
-	Delete(int) error
-}
-
 // FacultyService contains faculty business logic.
 type FacultyService struct {
-	repo FacultyRepository
+	repo models.FacultyRepository
 }
 
 // NewFacultyService creates a FacultyService.
-func NewFacultyService(repo FacultyRepository) *FacultyService {
+func NewFacultyService(
+	repo models.FacultyRepository,
+) *FacultyService {
 	return &FacultyService{
 		repo: repo,
 	}

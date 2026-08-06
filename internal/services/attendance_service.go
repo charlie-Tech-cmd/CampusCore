@@ -7,26 +7,14 @@ import (
 	"campuscore/internal/models"
 )
 
-// AttendanceRepository defines attendance persistence operations.
-type AttendanceRepository interface {
-	Create(record *models.Attendance) error
-	FindByID(id int) (*models.Attendance, error)
-	GetAll() ([]models.Attendance, error)
-	GetByStudent(studentID string) ([]models.Attendance, error)
-	GetByCourse(courseCode string) ([]models.Attendance, error)
-	GetByLecturer(lecturerID string) ([]models.Attendance, error)
-	Update(record *models.Attendance) error
-	Delete(id int) error
-}
-
 // AttendanceService contains attendance business logic.
 type AttendanceService struct {
-	attendance AttendanceRepository
+	attendance models.AttendanceRepository
 }
 
 // NewAttendanceService creates a new AttendanceService.
 func NewAttendanceService(
-	attendance AttendanceRepository,
+	attendance models.AttendanceRepository,
 ) *AttendanceService {
 	return &AttendanceService{
 		attendance: attendance,
