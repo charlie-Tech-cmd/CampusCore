@@ -2,23 +2,15 @@ package services
 
 import "campuscore/internal/models"
 
-// CourseRepository defines the persistence contract required by the service.
-type CourseServiceRepository interface {
-	Create(*models.Course) error
-	FindByCode(string) (*models.Course, error)
-	GetAll() ([]models.Course, error)
-	GetByDepartment(int) ([]models.Course, error)
-	Update(*models.Course) error
-	Delete(string) error
-}
-
 // CourseService contains course business logic.
 type CourseService struct {
-	repo CourseServiceRepository
+	repo models.CourseRepository
 }
 
 // NewCourseService creates a CourseService.
-func NewCourseService(repo CourseServiceRepository) *CourseService {
+func NewCourseService(
+	repo models.CourseRepository,
+) *CourseService {
 	return &CourseService{
 		repo: repo,
 	}

@@ -8,18 +8,10 @@ import (
 
 const MaxSemesterCredits = 24
 
-// StudentRepository defines student lookup operations.
 type StudentRepository interface {
 	FindByID(id string) (*models.User, error)
 }
 
-// CourseRepository defines course lookup operations.
-type CourseRepository interface {
-	FindByCode(code string) (*models.Course, error)
-	Update(course *models.Course) error
-}
-
-// EnrollmentRepository defines enrollment operations.
 type EnrollmentRepository interface {
 	Register(enrollment *models.Enrollment) error
 	FindByStudent(studentID string) ([]models.Enrollment, error)
@@ -28,17 +20,16 @@ type EnrollmentRepository interface {
 	Delete(studentID, courseCode string) error
 }
 
-// RegistrationService coordinates course registration.
 type RegistrationService struct {
 	students    StudentRepository
-	courses     CourseRepository
+	courses     models.CourseRepository
 	enrollments EnrollmentRepository
 }
 
 // NewRegistrationService creates a registration service.
 func NewRegistrationService(
 	students StudentRepository,
-	courses CourseRepository,
+	courses models.CourseRepository,
 	enrollments EnrollmentRepository,
 ) *RegistrationService {
 	return &RegistrationService{

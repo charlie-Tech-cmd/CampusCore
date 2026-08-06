@@ -17,7 +17,7 @@ type UserRepository interface {
 // TranscriptService generates student transcripts.
 type TranscriptService struct {
 	users       UserRepository
-	courses     CourseRepository
+	courses     models.CourseRepository
 	results     ResultRepository
 	departments DepartmentRepository
 	faculties   FacultyRepository
@@ -26,7 +26,7 @@ type TranscriptService struct {
 // NewTranscriptService creates a transcript service.
 func NewTranscriptService(
 	users UserRepository,
-	courses CourseRepository,
+	courses models.CourseRepository,
 	results ResultRepository,
 	departments DepartmentRepository,
 	faculties FacultyRepository,
