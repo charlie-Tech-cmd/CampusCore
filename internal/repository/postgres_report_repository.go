@@ -75,3 +75,11 @@ func (r *PostgresReportRepository) GetDashboardSummary() (
 	return summary, nil
 
 }
+
+func (r *PostgresReportRepository) GetAdmissionReport() (
+	*models.AdmissionReport,
+	error,
+) {
+
+	return &models.AdmissionReport{}, nil
+}

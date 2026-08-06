@@ -22,3 +22,11 @@ func (s *ReportService) DashboardSummary() (
 
 	return s.repo.GetDashboardSummary()
 }
+
+func (s *ReportService) AdmissionReport() (
+	*models.AdmissionReport,
+	error,
+) {
+
+	return s.repo.GetAdmissionReport()
+}

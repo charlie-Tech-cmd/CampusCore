@@ -39,3 +39,26 @@ func (h *ReportHandler) DashboardSummary(
 
 	json.NewEncoder(w).Encode(summary)
 }
+
+func (h *ReportHandler) AdmissionReport(
+	w http.ResponseWriter,
+	r *http.Request,
+) {
+
+	report, err := h.service.AdmissionReport()
+	if err != nil {
+		http.Error(
+			w,
+			err.Error(),
+			http.StatusInternalServerError,
+		)
+		return
+	}
+
+	w.Header().Set(
+		"Content-Type",
+		"application/json",
+	)
+
+	json.NewEncoder(w).Encode(report)
+}

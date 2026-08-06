@@ -34,7 +34,6 @@ func newServer(db *sql.DB) (*http.Server, *notification.Worker) {
 	resultRepo := repository.NewPostgresResultRepository(db)
 	attendanceRepo := repository.NewPostgresAttendanceRepository(db)
 	notificationRepo := repository.NewPostgresNotificationRepository(db)
-	reportingRepo := repository.NewPostgresReportingRepository(db)
 	admissionRepo := repository.NewPostgresAdmissionRepository(db)
 	billingRepo := repository.NewPostgresBillingRepository(db)
 	reportRepo := repository.NewPostgresReportRepository(db)
@@ -71,9 +70,6 @@ func newServer(db *sql.DB) (*http.Server, *notification.Worker) {
 
 	attendanceService := services.NewAttendanceService(
 		attendanceRepo,
-	)
-	reportingService := services.NewReportingService(
-		reportingRepo,
 	)
 	admissionService := services.NewAdmissionService(
 		admissionRepo,
@@ -123,10 +119,6 @@ func newServer(db *sql.DB) (*http.Server, *notification.Worker) {
 		attendanceService,
 	)
 
-	reportingHandler := api.NewReportingHandler(
-		reportingService,
-	)
-
 	admissionHandler := api.NewAdmissionHandler(
 		admissionService,
 	)
@@ -153,26 +145,6 @@ func newServer(db *sql.DB) (*http.Server, *notification.Worker) {
 		courseHandler,
 		attendanceHandler,
 		admissionHandler,
-	)
-
-	mux.HandleFunc(
-		"GET /reports/enrollment",
-		reportingHandler.GetEnrollmentSummary,
-	)
-
-	mux.HandleFunc(
-		"GET /reports/payments",
-		reportingHandler.GetPaymentSummary,
-	)
-
-	mux.HandleFunc(
-		"GET /reports/academic",
-		reportingHandler.GetAcademicPerformanceSummary,
-	)
-
-	mux.HandleFunc(
-		"GET /reports/clearance",
-		reportingHandler.GetClearanceSummary,
 	)
 
 	mux.HandleFunc(

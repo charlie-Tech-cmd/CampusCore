@@ -14,4 +14,18 @@ type DashboardSummary struct {
 
 type ReportRepository interface {
 	GetDashboardSummary() (*DashboardSummary, error)
+
+	GetAdmissionReport() (*AdmissionReport, error)
+}
+
+type AdmissionReport struct {
+	TotalApplications int `json:"total_applications"`
+
+	PendingApplications int `json:"pending_applications"`
+
+	ApprovedApplications int `json:"approved_applications"`
+
+	RejectedApplications int `json:"rejected_applications"`
+
+	ApprovalRate float64 `json:"approval_rate"`
 }
