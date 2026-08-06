@@ -10,13 +10,9 @@ import (
 	"campuscore/internal/models"
 )
 
-type UserRepository interface {
-	FindByID(id string) (*models.User, error)
-}
-
 // TranscriptService generates student transcripts.
 type TranscriptService struct {
-	users       UserRepository
+	users       models.UserRepository
 	courses     models.CourseRepository
 	results     models.ResultRepository
 	departments DepartmentRepository
@@ -25,7 +21,7 @@ type TranscriptService struct {
 
 // NewTranscriptService creates a transcript service.
 func NewTranscriptService(
-	users UserRepository,
+	users models.UserRepository,
 	courses models.CourseRepository,
 	results models.ResultRepository,
 	departments DepartmentRepository,

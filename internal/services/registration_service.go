@@ -8,10 +8,6 @@ import (
 
 const MaxSemesterCredits = 24
 
-type StudentRepository interface {
-	FindByID(id string) (*models.User, error)
-}
-
 type EnrollmentRepository interface {
 	Register(enrollment *models.Enrollment) error
 	FindByStudent(studentID string) ([]models.Enrollment, error)
@@ -21,14 +17,14 @@ type EnrollmentRepository interface {
 }
 
 type RegistrationService struct {
-	students    StudentRepository
+	students    models.UserRepository
 	courses     models.CourseRepository
 	enrollments EnrollmentRepository
 }
 
 // NewRegistrationService creates a registration service.
 func NewRegistrationService(
-	students StudentRepository,
+	students models.UserRepository,
 	courses models.CourseRepository,
 	enrollments EnrollmentRepository,
 ) *RegistrationService {
