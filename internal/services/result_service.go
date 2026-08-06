@@ -2,22 +2,15 @@ package services
 
 import "campuscore/internal/models"
 
-// ResultRepository defines the persistence contract required by the service.
-type ResultRepository interface {
-	Submit(*models.Result) error
-	FindByStudent(studentID string) ([]models.Result, error)
-	FindByCourse(courseCode string) ([]models.Result, error)
-	Update(*models.Result) error
-	Delete(id int) error
-}
-
 // ResultService contains result business logic.
 type ResultService struct {
-	repo ResultRepository
+	repo models.ResultRepository
 }
 
 // NewResultService creates a new ResultService.
-func NewResultService(repo ResultRepository) *ResultService {
+func NewResultService(
+	repo models.ResultRepository,
+) *ResultService {
 	return &ResultService{
 		repo: repo,
 	}

@@ -18,7 +18,7 @@ type UserRepository interface {
 type TranscriptService struct {
 	users       UserRepository
 	courses     models.CourseRepository
-	results     ResultRepository
+	results     models.ResultRepository
 	departments DepartmentRepository
 	faculties   FacultyRepository
 }
@@ -27,7 +27,7 @@ type TranscriptService struct {
 func NewTranscriptService(
 	users UserRepository,
 	courses models.CourseRepository,
-	results ResultRepository,
+	results models.ResultRepository,
 	departments DepartmentRepository,
 	faculties FacultyRepository,
 ) *TranscriptService {
