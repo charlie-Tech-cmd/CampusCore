@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"campuscore/internal/middleware"
 	"campuscore/internal/services"
 )
 
@@ -24,18 +25,17 @@ func (h *DashboardHandler) GetStudentDashboard(
 	w http.ResponseWriter,
 	r *http.Request,
 ) {
-	// Temporary: until JWT middleware injects the authenticated user.
-	studentID := r.URL.Query().Get("student_id")
+
+	studentID := middleware.CurrentUserID(r)
 
 	if studentID == "" {
 		http.Error(
 			w,
-			"student_id is required",
-			http.StatusBadRequest,
+			"unauthorized",
+			http.StatusUnauthorized,
 		)
 		return
 	}
-
 	dashboard, err := h.service.GetStudentDashboard(studentID)
 	if err != nil {
 		http.Error(

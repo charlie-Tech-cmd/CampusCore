@@ -203,9 +203,13 @@ func newServer(db *sql.DB) (*http.Server, *notification.Worker) {
 		}
 	})
 
-	mux.HandleFunc(
+	mux.Handle(
 		"/api/student/dashboard",
-		dashboardHandler.GetStudentDashboard,
+		middleware.JWTAuth(
+			http.HandlerFunc(
+				dashboardHandler.GetStudentDashboard,
+			),
+		),
 	)
 
 	server := &http.Server{
