@@ -77,6 +77,7 @@ func newServer(db *sql.DB) (*http.Server, *notification.Worker) {
 		billingService,
 	)
 	reportService := services.NewReportService(reportRepo)
+	userService := services.NewUserService(userRepo)
 
 	// Handlers.
 	authHandler := api.NewAuthHandler(userRepo, sessionManager)
@@ -125,6 +126,8 @@ func newServer(db *sql.DB) (*http.Server, *notification.Worker) {
 
 	reportHandler := api.NewReportHandler(
 		reportService)
+
+	userHandler := api.NewUserHandler(userService)
 
 	// Prevent unused variable errors.
 	_ = clearanceService
@@ -176,6 +179,17 @@ func newServer(db *sql.DB) (*http.Server, *notification.Worker) {
 		"/POST/reports/dashboard",
 		reportHandler.DashboardSummary,
 	)
+
+	mux.HandleFunc("/students/profile", func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			userHandler.GetProfile(w, r)
+		case http.MethodPut:
+			userHandler.UpdateProfile(w, r)
+		default:
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		}
+	})
 
 	server := &http.Server{
 		Addr:         ":8080",
