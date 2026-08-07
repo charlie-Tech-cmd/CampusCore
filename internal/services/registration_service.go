@@ -95,3 +95,10 @@ func (s *RegistrationService) RegisterCourse(
 	return nil
 
 }
+
+func (s *RegistrationService) GetStudentCourses(
+	studentID string,
+) ([]models.Enrollment, error) {
+
+	return s.enrollments.FindByStudent(studentID)
+}

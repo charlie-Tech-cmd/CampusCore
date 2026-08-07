@@ -3,6 +3,9 @@ package api
 import (
 	"encoding/json"
 	"net/http"
+
+	"campuscore/internal/middleware"
+	"campuscore/internal/models"
 )
 
 type RegistrationService interface {
@@ -12,6 +15,10 @@ type RegistrationService interface {
 		session string,
 		semester string,
 	) error
+
+	GetStudentCourses(
+		studentID string,
+	) ([]models.Enrollment, error)
 }
 
 type RegistrationHandler struct {
@@ -25,7 +32,6 @@ func NewRegistrationHandler(service RegistrationService) *RegistrationHandler {
 }
 
 type RegisterCourseRequest struct {
-	StudentID  string `json:"student_id"`
 	CourseCode string `json:"course_code"`
 	Session    string `json:"session"`
 	Semester   string `json:"semester"`
@@ -41,6 +47,13 @@ func (h *RegistrationHandler) RegisterCourse(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
+	studentID := middleware.CurrentUserID(r)
+
+	if studentID == "" {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+
 	var req RegisterCourseRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -49,7 +62,7 @@ func (h *RegistrationHandler) RegisterCourse(w http.ResponseWriter, r *http.Requ
 	}
 
 	err := h.service.RegisterCourse(
-		req.StudentID,
+		studentID,
 		req.CourseCode,
 		req.Session,
 		req.Semester,
@@ -65,4 +78,32 @@ func (h *RegistrationHandler) RegisterCourse(w http.ResponseWriter, r *http.Requ
 	json.NewEncoder(w).Encode(RegisterCourseResponse{
 		Message: "course registered successfully",
 	})
+}
+
+func (h *RegistrationHandler) GetStudentCourses(
+	w http.ResponseWriter,
+	r *http.Request,
+) {
+
+	if r.Method != http.MethodGet {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	studentID := middleware.CurrentUserID(r)
+
+	if studentID == "" {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	courses, err := h.service.GetStudentCourses(studentID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+
+	json.NewEncoder(w).Encode(courses)
 }

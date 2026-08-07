@@ -212,6 +212,24 @@ func newServer(db *sql.DB) (*http.Server, *notification.Worker) {
 		),
 	)
 
+	mux.Handle(
+		"/api/student/register-course",
+		middleware.JWTAuth(
+			http.HandlerFunc(
+				registrationHandler.RegisterCourse,
+			),
+		),
+	)
+
+	mux.Handle(
+		"/api/student/courses",
+		middleware.JWTAuth(
+			http.HandlerFunc(
+				registrationHandler.GetStudentCourses,
+			),
+		),
+	)
+
 	server := &http.Server{
 		Addr:         ":8080",
 		Handler:      middleware.Recovery(middleware.Logger(mux)),
