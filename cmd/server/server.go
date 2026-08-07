@@ -79,6 +79,14 @@ func newServer(db *sql.DB) (*http.Server, *notification.Worker) {
 	reportService := services.NewReportService(reportRepo)
 	userService := services.NewUserService(userRepo)
 
+	dashboardService := services.NewDashboardService(
+		userRepo,
+		enrollmentRepo,
+		billingRepo,
+		notificationRepo,
+		resultRepo,
+	)
+
 	// Handlers.
 	authHandler := api.NewAuthHandler(userRepo, sessionManager)
 	refreshHandler := api.NewRefreshHandler()
@@ -128,6 +136,10 @@ func newServer(db *sql.DB) (*http.Server, *notification.Worker) {
 		reportService)
 
 	userHandler := api.NewUserHandler(userService)
+
+	dashboardHandler := api.NewDashboardHandler(
+		dashboardService,
+	)
 
 	// Prevent unused variable errors.
 	_ = clearanceService
@@ -190,6 +202,11 @@ func newServer(db *sql.DB) (*http.Server, *notification.Worker) {
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		}
 	})
+
+	mux.HandleFunc(
+		"/api/student/dashboard",
+		dashboardHandler.GetStudentDashboard,
+	)
 
 	server := &http.Server{
 		Addr:         ":8080",
