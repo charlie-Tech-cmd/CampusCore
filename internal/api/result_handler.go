@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"campuscore/internal/middleware"
 	"campuscore/internal/models"
 )
 
@@ -43,7 +44,13 @@ func (h *ResultHandler) Submit(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *ResultHandler) StudentResults(w http.ResponseWriter, r *http.Request) {
-	studentID := r.URL.Query().Get("student_id")
+
+	studentID := middleware.CurrentUserID(r)
+
+	if studentID == "" {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
 
 	results, err := h.service.GetStudentResults(studentID)
 	if err != nil {
@@ -51,6 +58,7 @@ func (h *ResultHandler) StudentResults(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(results)
 }
 

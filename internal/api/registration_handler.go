@@ -19,6 +19,11 @@ type RegistrationService interface {
 	GetStudentCourses(
 		studentID string,
 	) ([]models.Enrollment, error)
+
+	DropCourse(
+		studentID string,
+		courseCode string,
+	) error
 }
 
 type RegistrationHandler struct {
@@ -29,6 +34,47 @@ func NewRegistrationHandler(service RegistrationService) *RegistrationHandler {
 	return &RegistrationHandler{
 		service: service,
 	}
+}
+
+func (h *RegistrationHandler) DropCourse(
+	w http.ResponseWriter,
+	r *http.Request,
+) {
+
+	if r.Method != http.MethodDelete {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	studentID := middleware.CurrentUserID(r)
+
+	if studentID == "" {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	courseCode := r.URL.Query().Get("course")
+
+	if courseCode == "" {
+		http.Error(w, "missing course code", http.StatusBadRequest)
+		return
+	}
+
+	err := h.service.DropCourse(
+		studentID,
+		courseCode,
+	)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+
+	json.NewEncoder(w).Encode(map[string]string{
+		"message": "course dropped successfully",
+	})
 }
 
 type RegisterCourseRequest struct {

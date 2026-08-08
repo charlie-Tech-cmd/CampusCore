@@ -68,6 +68,14 @@ func newServer(db *sql.DB) (*http.Server, *notification.Worker) {
 	)
 	resultService := services.NewResultService(resultRepo)
 
+	transcriptService := services.NewTranscriptService(
+		userRepo,
+		courseRepo,
+		resultRepo,
+		departmentRepo,
+		facultyRepo,
+	)
+
 	attendanceService := services.NewAttendanceService(
 		attendanceRepo,
 	)
@@ -122,6 +130,10 @@ func newServer(db *sql.DB) (*http.Server, *notification.Worker) {
 
 	resultHandler := api.NewResultHandler(
 		resultService,
+	)
+
+	transcriptHandler := api.NewTranscriptHandler(
+		transcriptService,
 	)
 
 	attendanceHandler := api.NewAttendanceHandler(
@@ -227,6 +239,29 @@ func newServer(db *sql.DB) (*http.Server, *notification.Worker) {
 			http.HandlerFunc(
 				registrationHandler.GetStudentCourses,
 			),
+		),
+	)
+
+	mux.Handle(
+		"/api/student/drop-course",
+		middleware.JWTAuth(
+			http.HandlerFunc(
+				registrationHandler.DropCourse,
+			),
+		),
+	)
+
+	mux.Handle(
+		"/api/student/results",
+		middleware.JWTAuth(
+			http.HandlerFunc(resultHandler.StudentResults),
+		),
+	)
+
+	mux.Handle(
+		"/api/student/transcript",
+		middleware.JWTAuth(
+			http.HandlerFunc(transcriptHandler.Student),
 		),
 	)
 

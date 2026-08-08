@@ -102,3 +102,27 @@ func (s *RegistrationService) GetStudentCourses(
 
 	return s.enrollments.FindByStudent(studentID)
 }
+
+func (s *RegistrationService) DropCourse(
+	studentID string,
+	courseCode string,
+) error {
+
+	course, err := s.courses.FindByCode(courseCode)
+	if err != nil {
+		return err
+	}
+
+	if err := s.enrollments.Delete(
+		studentID,
+		courseCode,
+	); err != nil {
+		return err
+	}
+
+	if course.CurrentEnrolled > 0 {
+		course.CurrentEnrolled--
+	}
+
+	return s.courses.Update(course)
+}

@@ -2,6 +2,8 @@ package services
 
 import (
 	"errors"
+	"fmt"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -36,12 +38,35 @@ func NewTranscriptService(
 	}
 }
 
-func (s *TranscriptService) GenerateTranscript(studentID string) (*models.Transcript, error) {
+// GenerateTranscript generates a complete transcript for a student.
+func (s *TranscriptService) GenerateTranscript(
+	studentID string,
+) (*models.Transcript, error) {
 
 	// Verify student exists.
 	student, err := s.users.FindByID(studentID)
 	if err != nil {
 		return nil, err
+	}
+
+	// Resolve department and faculty information.
+	var departmentName string
+	var facultyName string
+
+	if student.DepartmentID > 0 {
+		department, err := s.departments.FindByID(student.DepartmentID)
+		if err != nil {
+			return nil, err
+		}
+
+		departmentName = department.Name
+
+		faculty, err := s.faculties.FindByID(department.FacultyID)
+		if err != nil {
+			return nil, err
+		}
+
+		facultyName = faculty.Name
 	}
 
 	// Retrieve student's results.
@@ -69,14 +94,18 @@ func (s *TranscriptService) GenerateTranscript(studentID string) (*models.Transc
 		totalCreditUnits += result.CreditUnits
 	}
 
-	gpa := academic.CalculateGPA(
+	cgpa := academic.CalculateGPA(
 		totalQualityPoints,
 		totalCreditUnits,
 	)
 
-	classification := academic.ClassifyDegree(gpa)
+	classification := academic.ClassifyDegree(cgpa)
 
-	semesters := s.buildSemesterTranscripts(results)
+	// Build semester transcript.
+	semesters, err := s.buildSemesterTranscripts(results)
+	if err != nil {
+		return nil, err
+	}
 
 	transcript := &models.Transcript{
 		StudentID: student.ID,
@@ -89,7 +118,10 @@ func (s *TranscriptService) GenerateTranscript(studentID string) (*models.Transc
 
 		MatricNumber: student.ID,
 
-		CGPA:           gpa,
+		DepartmentName: departmentName,
+		FacultyName:    facultyName,
+
+		CGPA:           cgpa,
 		Classification: classification,
 
 		Semesters:   semesters,
@@ -97,12 +129,12 @@ func (s *TranscriptService) GenerateTranscript(studentID string) (*models.Transc
 	}
 
 	return transcript, nil
-
 }
 
+// buildSemesterTranscripts groups results into semester transcripts.
 func (s *TranscriptService) buildSemesterTranscripts(
 	results []models.Result,
-) []models.SemesterTranscript {
+) ([]models.SemesterTranscript, error) {
 
 	semesterMap := make(map[string]*models.SemesterTranscript)
 
@@ -110,8 +142,11 @@ func (s *TranscriptService) buildSemesterTranscripts(
 
 		course, err := s.courses.FindByCode(result.CourseCode)
 		if err != nil {
-			// Skip results whose course cannot be found.
-			continue
+			return nil, fmt.Errorf(
+				"failed to find course %s: %w",
+				result.CourseCode,
+				err,
+			)
 		}
 
 		key := result.Session + "-" +
@@ -168,5 +203,18 @@ func (s *TranscriptService) buildSemesterTranscripts(
 		)
 	}
 
-	return semesters
+	// Ensure transcript semesters have deterministic ordering.
+	sort.Slice(semesters, func(i, j int) bool {
+		if semesters[i].Level != semesters[j].Level {
+			return semesters[i].Level < semesters[j].Level
+		}
+
+		if semesters[i].Session != semesters[j].Session {
+			return semesters[i].Session < semesters[j].Session
+		}
+
+		return semesters[i].Semester < semesters[j].Semester
+	})
+
+	return semesters, nil
 }
