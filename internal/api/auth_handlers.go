@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 	"time"
 
@@ -209,7 +210,10 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Persist the new user.
+
 	if err := h.userRepo.Create(user); err != nil {
+		log.Printf("REGISTER: failed to create user %s: %v", user.ID, err)
+
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusInternalServerError)
 
@@ -218,7 +222,6 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
-
 	// Respond.
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
