@@ -7,18 +7,22 @@ import (
 	"strings"
 )
 
-// Engine handles the logical validations for our institutional workflow states
+// Engine handles the logical validations for our institutional workflow states.
 type Engine struct {
 	repo models.GovernanceRepository
 }
 
-// NewEngine instantiates our governance workflow controller
+// NewEngine instantiates our governance workflow controller.
 func NewEngine(r models.GovernanceRepository) *Engine {
 	return &Engine{repo: r}
 }
 
-// ProcessApprovalAdvance moves a result batch forward through the institutional hierarchy
-func (e *Engine) ProcessApprovalAdvance(courseCode string, currentActorRole models.UserRole, staffID string) error {
+// ProcessApprovalAdvance moves a result batch forward through the institutional hierarchy.
+func (e *Engine) ProcessApprovalAdvance(
+	courseCode string,
+	currentActorRole models.UserRole,
+	staffID string,
+) error {
 	approval, err := e.repo.GetApprovalStatus(courseCode)
 	if err != nil {
 		return fmt.Errorf("failed to check current workflow state: %w", err)
@@ -26,46 +30,84 @@ func (e *Engine) ProcessApprovalAdvance(courseCode string, currentActorRole mode
 
 	var nextState models.ResultStatus
 
-	// Enforce strict tier progression rules
 	switch approval.CurrentState {
 	case models.StatusSubmitted:
-		if currentActorRole != models.RoleAdmin && string(currentActorRole) != "HOD" {
-			return errors.New("governance conflict: only the Head of Department can approve a primary submission")
+		// The current role model has no explicit HOD role.
+		// Admin is therefore the only role authorized to perform
+		// the HOD approval tier until a dedicated HOD role exists.
+		if currentActorRole != models.RoleAdmin {
+			return errors.New(
+				"governance conflict: only an authorized administrator can approve a primary submission",
+			)
 		}
+
 		nextState = models.StatusHODApproved
 
 	case models.StatusHODApproved:
-		if currentActorRole != models.RoleAdmin && currentActorRole != models.RoleLecturer { // Assuming Dean authorization tier mappings
-			// Note: In route delivery, the endpoint will explicitly check if the lecturer has Dean privileges
+		// Lecturer currently represents the next academic approval tier.
+		// Admin retains an institutional override capability.
+		if currentActorRole != models.RoleAdmin &&
+			currentActorRole != models.RoleLecturer {
+			return errors.New(
+				"governance conflict: only an authorized lecturer or administrator can advance an HOD-approved result",
+			)
 		}
+
 		nextState = models.StatusDeanApproved
 
 	case models.StatusDeanApproved:
+		// There is currently no dedicated Senate role in the user model.
 		if currentActorRole != models.RoleAdmin {
-			return errors.New("governance conflict: only the Senate Board can grant institutional finalization")
+			return errors.New(
+				"governance conflict: only an authorized administrator can grant institutional final approval",
+			)
 		}
+
 		nextState = models.StatusSenateApproved
 
 	case models.StatusSenateApproved:
 		if currentActorRole != models.RoleAdmin {
-			return errors.New("governance conflict: administrative override required to shift to absolute final lock")
+			return errors.New(
+				"governance conflict: only an authorized administrator can finalize an academic record",
+			)
 		}
+
 		nextState = models.StatusFinalized
 
 	case models.StatusFinalized:
-		return errors.New("invalid operation: this academic record is finalized and locked against changes")
+		return errors.New(
+			"invalid operation: this academic record is finalized and locked against changes",
+		)
+
+	default:
+		return fmt.Errorf(
+			"invalid governance state: %q",
+			approval.CurrentState,
+		)
 	}
 
-	// Persist the forward step to the database layer
-	return e.repo.UpdateApprovalState(courseCode, nextState, staffID, "Forwarded to next governance tier.")
+	return e.repo.UpdateApprovalState(
+		courseCode,
+		nextState,
+		staffID,
+		"Forwarded to next governance tier.",
+	)
 }
 
-// ProcessApprovalRejection processes rollback steps, enforcing the dashed loops from your workflow chart
-func (e *Engine) ProcessApprovalRejection(courseCode string, currentActorRole models.UserRole, staffID string, remarks string) error {
-	// Defensive Validation: Reject instantly if no audit trail text justification is supplied
+// ProcessApprovalRejection processes rollback steps while enforcing
+// authorization for the current workflow tier.
+func (e *Engine) ProcessApprovalRejection(
+	courseCode string,
+	currentActorRole models.UserRole,
+	staffID string,
+	remarks string,
+) error {
 	cleanRemarks := strings.TrimSpace(remarks)
+
 	if len(cleanRemarks) < 10 {
-		return errors.New("validation error: you must provide an explicit reason string (minimum 10 characters) to reject a result batch")
+		return errors.New(
+			"validation error: you must provide an explicit reason string (minimum 10 characters) to reject a result batch",
+		)
 	}
 
 	approval, err := e.repo.GetApprovalStatus(courseCode)
@@ -75,27 +117,60 @@ func (e *Engine) ProcessApprovalRejection(courseCode string, currentActorRole mo
 
 	var targetBackwardState models.ResultStatus
 
-	// Map the workflow backward loops
 	switch approval.CurrentState {
 	case models.StatusSubmitted:
-		return errors.New("invalid operation: cannot reject a batch that is currently at initial submission level")
+		return errors.New(
+			"invalid operation: cannot reject a batch that is currently at initial submission level",
+		)
 
 	case models.StatusHODApproved:
-		// HOD rejects back to the original Lecturer
+		// The next academic tier is responsible for rejecting an
+		// HOD-approved submission back to submitted.
+		if currentActorRole != models.RoleAdmin &&
+			currentActorRole != models.RoleLecturer {
+			return errors.New(
+				"governance conflict: only an authorized lecturer or administrator can reject an HOD-approved result",
+			)
+		}
+
 		targetBackwardState = models.StatusSubmitted
 
 	case models.StatusDeanApproved:
-		// Dean rejects back to the HOD panel
+		// Admin is the only currently defined institutional authority
+		// capable of handling this higher-level rollback.
+		if currentActorRole != models.RoleAdmin {
+			return errors.New(
+				"governance conflict: only an authorized administrator can reject a dean-approved result",
+			)
+		}
+
 		targetBackwardState = models.StatusHODApproved
 
 	case models.StatusSenateApproved:
-		// Senate rejects back to the Dean's faculty office
+		if currentActorRole != models.RoleAdmin {
+			return errors.New(
+				"governance conflict: only an authorized administrator can reject a senate-approved result",
+			)
+		}
+
 		targetBackwardState = models.StatusDeanApproved
 
 	case models.StatusFinalized:
-		return errors.New("critical security failure: finalized transcripts cannot be rejected via standard endpoints")
+		return errors.New(
+			"critical security failure: finalized transcripts cannot be rejected via standard endpoints",
+		)
+
+	default:
+		return fmt.Errorf(
+			"invalid governance state: %q",
+			approval.CurrentState,
+		)
 	}
 
-	// Update the database state to match our rollback cascade
-	return e.repo.UpdateApprovalState(courseCode, targetBackwardState, staffID, cleanRemarks)
+	return e.repo.UpdateApprovalState(
+		courseCode,
+		targetBackwardState,
+		staffID,
+		cleanRemarks,
+	)
 }

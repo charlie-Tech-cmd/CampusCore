@@ -13,6 +13,7 @@ func registerRoutes(
 	authHandler *api.AuthHandler,
 	refreshHandler *api.RefreshHandler,
 	studentHandler *api.StudentHandler,
+	dashboardHandler *api.DashboardHandler,
 	lecturerHandler *api.LecturerHandler,
 	paymentHandler *api.PaymentHandler,
 	departmentHandler *api.DepartmentHandler,
@@ -22,6 +23,7 @@ func registerRoutes(
 	courseHandler *api.CourseHandler,
 	attendanceHandler *api.AttendanceHandler,
 	admissionHandler *api.AdmissionHandler,
+	transcriptHandler *api.TranscriptHandler,
 ) *http.ServeMux {
 
 	mux := http.NewServeMux()
@@ -30,38 +32,61 @@ func registerRoutes(
 	mux.Handle(
 		"/api/v1/results/submit",
 		authMiddleware.Authenticate(
-			http.HandlerFunc(resultHandler.Submit),
+			authMiddleware.RequireRole(
+				"lecturer",
+				"admin",
+			)(
+				http.HandlerFunc(resultHandler.Submit),
+			),
 		),
 	)
 
 	mux.Handle(
 		"/api/v1/results/student",
 		authMiddleware.Authenticate(
-			http.HandlerFunc(resultHandler.StudentResults),
+			authMiddleware.RequireRole(
+				"student",
+			)(
+				http.HandlerFunc(resultHandler.StudentResults),
+			),
 		),
 	)
 
 	mux.Handle(
 		"/api/v1/results/course",
 		authMiddleware.Authenticate(
-			http.HandlerFunc(resultHandler.CourseResults),
+			authMiddleware.RequireRole(
+				"lecturer",
+				"admin",
+			)(
+				http.HandlerFunc(resultHandler.CourseResults),
+			),
 		),
 	)
 
 	mux.Handle(
 		"/api/v1/results/update",
 		authMiddleware.Authenticate(
-			http.HandlerFunc(resultHandler.Update),
+			authMiddleware.RequireRole(
+				"lecturer",
+				"admin",
+			)(
+				http.HandlerFunc(resultHandler.Update),
+			),
 		),
 	)
 
 	mux.Handle(
 		"/api/v1/results/delete",
 		authMiddleware.Authenticate(
-			http.HandlerFunc(resultHandler.Delete),
+			authMiddleware.RequireRole(
+				"lecturer",
+				"admin",
+			)(
+				http.HandlerFunc(resultHandler.Delete),
+			),
 		),
 	)
-
 	// Home
 	mux.HandleFunc("/", homeHandler)
 
@@ -86,6 +111,15 @@ func registerRoutes(
 		"/api/v1/faculties",
 		authMiddleware.Authenticate(
 			http.HandlerFunc(facultyHandler.List),
+		),
+	)
+
+	mux.Handle(
+		"/api/v1/student/dashboard",
+		authMiddleware.Authenticate(
+			authMiddleware.RequireRole("student")(
+				http.HandlerFunc(dashboardHandler.GetStudentDashboard),
+			),
 		),
 	)
 
@@ -222,7 +256,11 @@ func registerRoutes(
 	mux.Handle(
 		"/api/v1/courses/create",
 		authMiddleware.Authenticate(
-			http.HandlerFunc(courseHandler.Create),
+			authMiddleware.RequireRole(
+				"admin",
+			)(
+				http.HandlerFunc(courseHandler.Create),
+			),
 		),
 	)
 
@@ -236,14 +274,22 @@ func registerRoutes(
 	mux.Handle(
 		"/api/v1/courses/update",
 		authMiddleware.Authenticate(
-			http.HandlerFunc(courseHandler.Update),
+			authMiddleware.RequireRole(
+				"admin",
+			)(
+				http.HandlerFunc(courseHandler.Update),
+			),
 		),
 	)
 
 	mux.Handle(
 		"/api/v1/courses/delete",
 		authMiddleware.Authenticate(
-			http.HandlerFunc(courseHandler.Delete),
+			authMiddleware.RequireRole(
+				"admin",
+			)(
+				http.HandlerFunc(courseHandler.Delete),
+			),
 		),
 	)
 
@@ -327,6 +373,14 @@ func registerRoutes(
 		),
 	)
 
+	mux.Handle(
+		"/api/v1/student/transcript",
+		authMiddleware.Authenticate(
+			authMiddleware.RequireRole("student")(
+				http.HandlerFunc(transcriptHandler.Student),
+			),
+		),
+	)
 	return mux
 }
 
