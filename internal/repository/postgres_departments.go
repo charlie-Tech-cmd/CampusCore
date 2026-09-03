@@ -23,15 +23,22 @@ func NewPostgresDepartmentRepository(db *sql.DB) *PostgresDepartmentRepository {
 // Create inserts a new department.
 func (r *PostgresDepartmentRepository) Create(department *models.Department) error {
 	query := `
-		INSERT INTO departments (id, name, faculty_id)
-		VALUES ($1, $2, $3);
+		INSERT INTO departments (code, name, faculty_id, description)
+		VALUES ($1, $2, $3, $4)
+		RETURNING id, is_active, created_at, updated_at;
 	`
 
-	_, err := r.db.Exec(
+	err := r.db.QueryRow(
 		query,
-		department.ID,
+		department.Code,
 		department.Name,
 		department.FacultyID,
+		department.Description,
+	).Scan(
+		&department.ID,
+		&department.IsActive,
+		&department.CreatedAt,
+		&department.UpdatedAt,
 	)
 
 	if err != nil {

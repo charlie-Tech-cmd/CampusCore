@@ -334,7 +334,9 @@ func registerRoutes(
 	mux.Handle(
 		"/api/v1/departments/create",
 		authMiddleware.Authenticate(
-			http.HandlerFunc(departmentHandler.Create),
+			authMiddleware.RequireRole("admin")(
+				http.HandlerFunc(departmentHandler.Create),
+			),
 		),
 	)
 
@@ -348,17 +350,20 @@ func registerRoutes(
 	mux.Handle(
 		"/api/v1/departments/update",
 		authMiddleware.Authenticate(
-			http.HandlerFunc(departmentHandler.Update),
+			authMiddleware.RequireRole("admin")(
+				http.HandlerFunc(departmentHandler.Update),
+			),
 		),
 	)
 
 	mux.Handle(
 		"/api/v1/departments/delete",
 		authMiddleware.Authenticate(
-			http.HandlerFunc(departmentHandler.Delete),
+			authMiddleware.RequireRole("admin")(
+				http.HandlerFunc(departmentHandler.Delete),
+			),
 		),
 	)
-
 	mux.Handle(
 		"/api/v1/faculty/results/reject",
 		authMiddleware.Authenticate(
