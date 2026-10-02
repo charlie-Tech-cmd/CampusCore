@@ -163,6 +163,7 @@ func newServer(db *sql.DB, cfg config.ServerConfig) (*http.Server, *notification
 		authHandler,
 		refreshHandler,
 		studentHandler,
+		dashboardHandler,
 		lecturerHandler,
 		paymentHandler,
 		departmentHandler,
@@ -172,6 +173,7 @@ func newServer(db *sql.DB, cfg config.ServerConfig) (*http.Server, *notification
 		courseHandler,
 		attendanceHandler,
 		admissionHandler,
+		transcriptHandler,
 	)
 
 	mux.HandleFunc(
