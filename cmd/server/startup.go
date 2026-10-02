@@ -7,8 +7,7 @@ import (
 
 func startServer(server *http.Server) {
 	go func() {
-		log.Println("Server listening on http://localhost:8080")
-
+		log.Printf("Server listening on %s", server.Addr)
 		if err := server.ListenAndServe(); err != nil &&
 			err != http.ErrServerClosed {
 			log.Fatal(err)

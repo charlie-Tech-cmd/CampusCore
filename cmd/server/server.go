@@ -3,10 +3,10 @@ package main
 import (
 	"database/sql"
 	"net/http"
-	"time"
 
 	"campuscore/internal/api"
 	"campuscore/internal/auth"
+	"campuscore/internal/config"
 	"campuscore/internal/governance"
 	"campuscore/internal/middleware"
 	"campuscore/internal/notification"
@@ -14,8 +14,8 @@ import (
 	"campuscore/internal/services"
 )
 
-func newServer(db *sql.DB) (*http.Server, *notification.Worker) {
-	// Background worker.
+// Background worker.
+func newServer(db *sql.DB, cfg config.ServerConfig) (*http.Server, *notification.Worker) {
 	worker := notification.NewWorker(100)
 	worker.Start()
 
@@ -266,11 +266,11 @@ func newServer(db *sql.DB) (*http.Server, *notification.Worker) {
 	)
 
 	server := &http.Server{
-		Addr:         ":8080",
+		Addr:         cfg.Host + ":" + cfg.Port,
 		Handler:      middleware.Recovery(middleware.Logger(mux)),
-		ReadTimeout:  10 * time.Second,
-		WriteTimeout: 10 * time.Second,
-		IdleTimeout:  30 * time.Second,
+		ReadTimeout:  cfg.ReadTimeout,
+		WriteTimeout: cfg.WriteTimeout,
+		IdleTimeout:  cfg.IdleTimeout,
 	}
 
 	return server, worker

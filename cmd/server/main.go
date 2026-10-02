@@ -30,8 +30,7 @@ func main() {
 	}
 
 	// Build the HTTP server and background workers.
-	server, worker := newServer(dbContainer.Pool)
-
+	server, worker := newServer(dbContainer.Pool, cfg.Server)
 	// Ensure background workers shut down gracefully.
 	defer worker.Stop(context.Background())
 

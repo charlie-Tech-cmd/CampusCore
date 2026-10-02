@@ -14,9 +14,11 @@ type ServerConfig struct {
 
 // loadServerConfig loads HTTP server configuration from the environment.
 func loadServerConfig() ServerConfig {
+	port := getEnv("PORT", getEnv("SERVER_PORT", "8080"))
+
 	return ServerConfig{
 		Host:            getEnv("SERVER_HOST", "0.0.0.0"),
-		Port:            getEnv("SERVER_PORT", "8080"),
+		Port:            port,
 		ReadTimeout:     getEnvAsDuration("SERVER_READ_TIMEOUT", "15s"),
 		WriteTimeout:    getEnvAsDuration("SERVER_WRITE_TIMEOUT", "15s"),
 		IdleTimeout:     getEnvAsDuration("SERVER_IDLE_TIMEOUT", "60s"),
