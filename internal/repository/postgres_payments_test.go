@@ -1557,17 +1557,29 @@ func TestGetApprovalStatus_Success(t *testing.T) {
 	repo := NewPostgresGovernanceRepository(db)
 
 	query := regexp.QuoteMeta(`
-                SELECT id, course_code, session, semester, current_state, action_by, remarks, updated_at
-                FROM approvals
-                WHERE course_code = $1
-                LIMIT 1;`)
+		SELECT
+			a.id,
+			a.course_code,
+			s.session_name,
+			s.semester::text,
+			a.current_state,
+			COALESCE(a.action_by, ''),
+			COALESCE(a.remarks, ''),
+			a.updated_at
+		FROM approvals a
+		JOIN academic_sessions s
+			ON s.id = a.session_id
+		WHERE a.course_code = $1
+		ORDER BY a.updated_at DESC
+		LIMIT 1;
+	`)
 
 	now := time.Now()
 
 	rows := sqlmock.NewRows([]string{
 		"id",
 		"course_code",
-		"session",
+		"session_name",
 		"semester",
 		"current_state",
 		"action_by",
@@ -1576,7 +1588,7 @@ func TestGetApprovalStatus_Success(t *testing.T) {
 	}).AddRow(
 		1,
 		"CSC401",
-		"2026/2027",
+		"2025/2026",
 		"First",
 		models.StatusHODApproved,
 		"STAFF001",
@@ -1597,6 +1609,18 @@ func TestGetApprovalStatus_Success(t *testing.T) {
 		t.Fatal("wrong course")
 	}
 
+	if approval.Session != "2025/2026" {
+		t.Fatal("wrong session")
+	}
+
+	if approval.Semester != "First" {
+		t.Fatal("wrong semester")
+	}
+
+	if approval.CurrentState != models.StatusHODApproved {
+		t.Fatal("wrong approval state")
+	}
+
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Fatal(err)
 	}
@@ -1611,15 +1635,46 @@ func TestGetApprovalStatus_NoRows(t *testing.T) {
 
 	repo := NewPostgresGovernanceRepository(db)
 
-	query := regexp.QuoteMeta(`
-                SELECT id, course_code, session, semester, current_state, action_by, remarks, updated_at
-                FROM approvals
-                WHERE course_code = $1
-                LIMIT 1;`)
+	approvalQuery := regexp.QuoteMeta(`
+		SELECT
+			a.id,
+			a.course_code,
+			s.session_name,
+			s.semester::text,
+			a.current_state,
+			COALESCE(a.action_by, ''),
+			COALESCE(a.remarks, ''),
+			a.updated_at
+		FROM approvals a
+		JOIN academic_sessions s
+			ON s.id = a.session_id
+		WHERE a.course_code = $1
+		ORDER BY a.updated_at DESC
+		LIMIT 1;
+	`)
 
-	mock.ExpectQuery(query).
+	mock.ExpectQuery(approvalQuery).
 		WithArgs("CSC401").
 		WillReturnError(sql.ErrNoRows)
+
+	sessionQuery := regexp.QuoteMeta(`
+		SELECT session_name, semester::text
+		FROM academic_sessions
+		WHERE is_active = true
+		ORDER BY id DESC
+		LIMIT 1;
+	`)
+
+	sessionRows := sqlmock.NewRows([]string{
+		"session_name",
+		"semester",
+	}).AddRow(
+		"2025/2026",
+		"First",
+	)
+
+	mock.ExpectQuery(sessionQuery).
+		WillReturnRows(sessionRows)
 
 	approval, err := repo.GetApprovalStatus("CSC401")
 	if err != nil {
@@ -1632,6 +1687,14 @@ func TestGetApprovalStatus_NoRows(t *testing.T) {
 
 	if approval.CourseCode != "CSC401" {
 		t.Fatal("wrong course")
+	}
+
+	if approval.Session != "2025/2026" {
+		t.Fatal("wrong session")
+	}
+
+	if approval.Semester != "First" {
+		t.Fatal("wrong semester")
 	}
 
 	if err := mock.ExpectationsWereMet(); err != nil {
@@ -1649,15 +1712,27 @@ func TestGetApprovalStatus_ScanError(t *testing.T) {
 	repo := NewPostgresGovernanceRepository(db)
 
 	query := regexp.QuoteMeta(`
-                SELECT id, course_code, session, semester, current_state, action_by, remarks, updated_at
-                FROM approvals
-                WHERE course_code = $1
-                LIMIT 1;`)
+		SELECT
+			a.id,
+			a.course_code,
+			s.session_name,
+			s.semester::text,
+			a.current_state,
+			COALESCE(a.action_by, ''),
+			COALESCE(a.remarks, ''),
+			a.updated_at
+		FROM approvals a
+		JOIN academic_sessions s
+			ON s.id = a.session_id
+		WHERE a.course_code = $1
+		ORDER BY a.updated_at DESC
+		LIMIT 1;
+	`)
 
 	rows := sqlmock.NewRows([]string{
 		"id",
 		"course_code",
-		"session",
+		"session_name",
 		"semester",
 		"current_state",
 		"action_by",
@@ -1666,7 +1741,7 @@ func TestGetApprovalStatus_ScanError(t *testing.T) {
 	}).AddRow(
 		"invalid",
 		"CSC401",
-		"2026/2027",
+		"2025/2026",
 		"First",
 		models.StatusHODApproved,
 		"STAFF001",
@@ -1698,14 +1773,53 @@ func TestUpdateApprovalState_Success(t *testing.T) {
 	repo := NewPostgresGovernanceRepository(db)
 
 	query := regexp.QuoteMeta(`
-                INSERT INTO approvals (course_code, session, semester, current_state, action_by, remarks, updated_at)
-                VALUES ($1, '2026/2027', 'First', $2, $3, $4, CURRENT_TIMESTAMP)
-                ON CONFLICT (course_code, session, semester)
-                DO UPDATE SET
-                        current_state = EXCLUDED.current_state,
-                        action_by = EXCLUDED.action_by,
-                        remarks = EXCLUDED.remarks,
-                        updated_at = CURRENT_TIMESTAMP;`)
+		WITH target_session AS (
+			SELECT session_id
+			FROM approvals
+			WHERE course_code = $1
+			ORDER BY updated_at DESC
+			LIMIT 1
+		),
+		active_session AS (
+			SELECT id AS session_id
+			FROM academic_sessions
+			WHERE is_active = true
+			ORDER BY id DESC
+			LIMIT 1
+		),
+		resolved_session AS (
+			SELECT session_id FROM target_session
+			UNION ALL
+			SELECT session_id
+			FROM active_session
+			WHERE NOT EXISTS (
+				SELECT 1 FROM target_session
+			)
+			LIMIT 1
+		)
+		INSERT INTO approvals (
+			course_code,
+			session_id,
+			current_state,
+			action_by,
+			remarks,
+			updated_at
+		)
+		SELECT
+			$1,
+			session_id,
+			$2,
+			$3,
+			$4,
+			CURRENT_TIMESTAMP
+		FROM resolved_session
+		ON CONFLICT (course_code, session_id)
+		DO UPDATE SET
+			current_state = EXCLUDED.current_state,
+			action_by = EXCLUDED.action_by,
+			remarks = EXCLUDED.remarks,
+			updated_at = CURRENT_TIMESTAMP;
+	`)
 
 	mock.ExpectExec(query).
 		WithArgs(
@@ -1741,14 +1855,53 @@ func TestUpdateApprovalState_ExecError(t *testing.T) {
 	repo := NewPostgresGovernanceRepository(db)
 
 	query := regexp.QuoteMeta(`
-                INSERT INTO approvals (course_code, session, semester, current_state, action_by, remarks, updated_at)
-                VALUES ($1, '2026/2027', 'First', $2, $3, $4, CURRENT_TIMESTAMP)
-                ON CONFLICT (course_code, session, semester)
-                DO UPDATE SET
-                        current_state = EXCLUDED.current_state,
-                        action_by = EXCLUDED.action_by,
-                        remarks = EXCLUDED.remarks,
-                        updated_at = CURRENT_TIMESTAMP;`)
+		WITH target_session AS (
+			SELECT session_id
+			FROM approvals
+			WHERE course_code = $1
+			ORDER BY updated_at DESC
+			LIMIT 1
+		),
+		active_session AS (
+			SELECT id AS session_id
+			FROM academic_sessions
+			WHERE is_active = true
+			ORDER BY id DESC
+			LIMIT 1
+		),
+		resolved_session AS (
+			SELECT session_id FROM target_session
+			UNION ALL
+			SELECT session_id
+			FROM active_session
+			WHERE NOT EXISTS (
+				SELECT 1 FROM target_session
+			)
+			LIMIT 1
+		)
+		INSERT INTO approvals (
+			course_code,
+			session_id,
+			current_state,
+			action_by,
+			remarks,
+			updated_at
+		)
+		SELECT
+			$1,
+			session_id,
+			$2,
+			$3,
+			$4,
+			CURRENT_TIMESTAMP
+		FROM resolved_session
+		ON CONFLICT (course_code, session_id)
+		DO UPDATE SET
+			current_state = EXCLUDED.current_state,
+			action_by = EXCLUDED.action_by,
+			remarks = EXCLUDED.remarks,
+			updated_at = CURRENT_TIMESTAMP;
+	`)
 
 	mock.ExpectExec(query).
 		WithArgs(
