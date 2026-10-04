@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"context"
+	"log"
 	"net/http"
 	"strings"
 
@@ -40,6 +41,9 @@ func (ag *AuthGatekeeper) Authenticate(next http.Handler) http.Handler {
 			session, err := ag.sessionMgr.ValidateSession(cookie.Value)
 			if err == nil {
 				ctx := context.WithValue(r.Context(), UserContextKey, session)
+				ctx = context.WithValue(ctx, UserIDContextKey, session.UserID)
+				ctx = context.WithValue(ctx, UserRoleContextKey, session.Role)
+
 				next.ServeHTTP(w, r.WithContext(ctx))
 				return
 			}
@@ -63,11 +67,18 @@ func (ag *AuthGatekeeper) Authenticate(next http.Handler) http.Handler {
 				}
 
 				ctx := context.WithValue(r.Context(), UserContextKey, session)
+				ctx = context.WithValue(ctx, UserIDContextKey, claims.UserID)
+				ctx = context.WithValue(ctx, UserRoleContextKey, claims.Role)
+
 				next.ServeHTTP(w, r.WithContext(ctx))
 				return
 			}
-		}
 
+			log.Printf("JWT validation failed: %v", err)
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
+
+		}
 		// ----------------------------------------------------
 		// 3. Authentication Failed
 		// ----------------------------------------------------

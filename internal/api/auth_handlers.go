@@ -82,11 +82,30 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Create JWT.
-	accessToken, err := auth.GenerateAccessToken(user.ID, string(user.Role))
+	accessToken, err := auth.GenerateAccessToken(
+		user.ID,
+		string(user.Role),
+	)
+
 	if err != nil {
+		log.Printf("GenerateAccessToken failed: %v", err)
+
+		http.Error(
+			w,
+			`{"error": "Failed to generate access token."}`,
+			http.StatusInternalServerError,
+		)
+		return
+	}
+	refreshToken, err := auth.GenerateRefreshToken(
+		user.ID,
+		string(user.Role),
+	)
+	if err != nil {
+		log.Printf("GenerateRefreshToken failed: %v", err)
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusInternalServerError)
-		_, _ = w.Write([]byte(`{"error": "Failed to generate access token."}`))
+		_, _ = w.Write([]byte(`{"error": "Failed to generate refresh token."}`))
 		return
 	}
 
@@ -106,13 +125,13 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 
 	// Return JWT.
 	response := map[string]any{
-		"message":      "Authorization successful.",
-		"role":         string(user.Role),
-		"access_token": accessToken,
-		"token_type":   "Bearer",
-		"expires_in":   int(auth.AccessTokenDuration.Seconds()),
+		"message":       "Authorization successful.",
+		"role":          string(user.Role),
+		"access_token":  accessToken,
+		"refresh_token": refreshToken,
+		"token_type":    "Bearer",
+		"expires_in":    int(auth.AccessTokenDuration.Seconds()),
 	}
-
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 
