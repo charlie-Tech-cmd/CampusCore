@@ -52,13 +52,27 @@ func (r *PostgresUserRepository) FindByID(id string) (*models.User, error) {
 	row := r.db.QueryRow(query, id)
 
 	var u models.User
-	var lastLoginNull sql.NullTime // Handles empty login dates safely without structural runtime crashing
+	var middleNameNull sql.NullString
+	var phoneNull sql.NullString
 	var deptNull sql.NullInt32
+	var levelNull sql.NullInt32
+	var lastLoginNull sql.NullTime
 
 	err := row.Scan(
-		&u.ID, &u.Surname, &u.FirstName, &u.MiddleName, &u.Email, &u.Phone,
-		&u.PasswordHash, &u.Role, &deptNull, &u.Level, &lastLoginNull, &u.CreatedAt,
+		&u.ID,
+		&u.Surname,
+		&u.FirstName,
+		&middleNameNull,
+		&u.Email,
+		&phoneNull,
+		&u.PasswordHash,
+		&u.Role,
+		&deptNull,
+		&levelNull,
+		&lastLoginNull,
+		&u.CreatedAt,
 	)
+
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, fmt.Errorf("user account with ID %s not found: %w", id, err)
@@ -66,11 +80,20 @@ func (r *PostgresUserRepository) FindByID(id string) (*models.User, error) {
 		return nil, fmt.Errorf("failed to process find by id query: %w", err)
 	}
 
-	if lastLoginNull.Valid {
-		u.LastLogin = lastLoginNull.Time
+	if middleNameNull.Valid {
+		u.MiddleName = middleNameNull.String
+	}
+	if phoneNull.Valid {
+		u.Phone = phoneNull.String
 	}
 	if deptNull.Valid {
 		u.DepartmentID = int(deptNull.Int32)
+	}
+	if levelNull.Valid {
+		u.Level = int(levelNull.Int32)
+	}
+	if lastLoginNull.Valid {
+		u.LastLogin = lastLoginNull.Time
 	}
 
 	return &u, nil
@@ -87,12 +110,25 @@ func (r *PostgresUserRepository) FindByEmail(email string) (*models.User, error)
 	row := r.db.QueryRow(query, email)
 
 	var u models.User
-	var lastLoginNull sql.NullTime
+	var middleNameNull sql.NullString
+	var phoneNull sql.NullString
 	var deptNull sql.NullInt32
+	var levelNull sql.NullInt32
+	var lastLoginNull sql.NullTime
 
 	err := row.Scan(
-		&u.ID, &u.Surname, &u.FirstName, &u.MiddleName, &u.Email, &u.Phone,
-		&u.PasswordHash, &u.Role, &deptNull, &u.Level, &lastLoginNull, &u.CreatedAt,
+		&u.ID,
+		&u.Surname,
+		&u.FirstName,
+		&middleNameNull,
+		&u.Email,
+		&phoneNull,
+		&u.PasswordHash,
+		&u.Role,
+		&deptNull,
+		&levelNull,
+		&lastLoginNull,
+		&u.CreatedAt,
 	)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -101,11 +137,20 @@ func (r *PostgresUserRepository) FindByEmail(email string) (*models.User, error)
 		return nil, fmt.Errorf("failed to process find by email query: %w", err)
 	}
 
-	if lastLoginNull.Valid {
-		u.LastLogin = lastLoginNull.Time
+	if middleNameNull.Valid {
+		u.MiddleName = middleNameNull.String
+	}
+	if phoneNull.Valid {
+		u.Phone = phoneNull.String
 	}
 	if deptNull.Valid {
 		u.DepartmentID = int(deptNull.Int32)
+	}
+	if levelNull.Valid {
+		u.Level = int(levelNull.Int32)
+	}
+	if lastLoginNull.Valid {
+		u.LastLogin = lastLoginNull.Time
 	}
 
 	return &u, nil
@@ -145,20 +190,23 @@ func (r *PostgresUserRepository) GetProfile(id string) (*models.User, error) {
 	row := r.db.QueryRow(query, id)
 
 	var u models.User
-	var lastLoginNull sql.NullTime
+	var middleNameNull sql.NullString
+	var phoneNull sql.NullString
 	var deptNull sql.NullInt32
+	var levelNull sql.NullInt32
+	var lastLoginNull sql.NullTime
 
 	err := row.Scan(
 		&u.ID,
 		&u.Surname,
 		&u.FirstName,
-		&u.MiddleName,
+		&middleNameNull,
 		&u.Email,
-		&u.Phone,
+		&phoneNull,
 		&u.PasswordHash,
 		&u.Role,
 		&deptNull,
-		&u.Level,
+		&levelNull,
 		&lastLoginNull,
 		&u.CreatedAt,
 	)
@@ -170,10 +218,18 @@ func (r *PostgresUserRepository) GetProfile(id string) (*models.User, error) {
 		return nil, fmt.Errorf("failed to retrieve user profile: %w", err)
 	}
 
+	if middleNameNull.Valid {
+		u.MiddleName = middleNameNull.String
+	}
+	if phoneNull.Valid {
+		u.Phone = phoneNull.String
+	}
 	if deptNull.Valid {
 		u.DepartmentID = int(deptNull.Int32)
 	}
-
+	if levelNull.Valid {
+		u.Level = int(levelNull.Int32)
+	}
 	if lastLoginNull.Valid {
 		u.LastLogin = lastLoginNull.Time
 	}
@@ -222,5 +278,4 @@ func (r *PostgresUserRepository) UpdateProfile(user *models.User) error {
 	}
 
 	return nil
-
 }
