@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"context"
+	"log"
 	"net/http"
 	"strings"
 
@@ -16,7 +17,6 @@ const (
 // JWTAuth validates JWT Bearer tokens.
 func JWTAuth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-
 		authHeader := r.Header.Get("Authorization")
 		if authHeader == "" {
 			http.Error(w, "Missing Authorization header", http.StatusUnauthorized)
@@ -32,11 +32,18 @@ func JWTAuth(next http.Handler) http.Handler {
 
 		claims, err := auth.ValidateAccessToken(token)
 		if err != nil {
-			http.Error(w, "Invalid or expired token", http.StatusUnauthorized)
+			log.Printf("JWT validation failed: %v", err)
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
 		}
 
-		ctx := context.WithValue(r.Context(), UserIDContextKey, claims.UserID)
+		session := &auth.Session{
+			UserID: claims.UserID,
+			Role:   claims.Role,
+		}
+
+		ctx := context.WithValue(r.Context(), UserContextKey, session)
+		ctx = context.WithValue(ctx, UserIDContextKey, claims.UserID)
 		ctx = context.WithValue(ctx, UserRoleContextKey, claims.Role)
 
 		next.ServeHTTP(w, r.WithContext(ctx))
@@ -44,11 +51,19 @@ func JWTAuth(next http.Handler) http.Handler {
 }
 
 func CurrentUserID(r *http.Request) string {
-	id, _ := r.Context().Value(UserIDContextKey).(string)
-	return id
+	session, ok := r.Context().Value(UserContextKey).(*auth.Session)
+	if !ok || session == nil {
+		return ""
+	}
+
+	return session.UserID
 }
 
 func CurrentUserRole(r *http.Request) string {
-	role, _ := r.Context().Value(UserRoleContextKey).(string)
-	return role
+	session, ok := r.Context().Value(UserContextKey).(*auth.Session)
+	if !ok || session == nil {
+		return ""
+	}
+
+	return session.Role
 }
