@@ -150,6 +150,16 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Public registration is limited to student accounts.
+	if req.Role != models.RoleStudent {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusForbidden)
+		_ = json.NewEncoder(w).Encode(map[string]string{
+			"error": "Only student accounts can be created through public registration.",
+		})
+		return
+	}
+
 	// Validate password confirmation.
 	if req.Password != req.ConfirmPassword {
 		w.Header().Set("Content-Type", "application/json")

@@ -777,3 +777,117 @@ func TestSubmitTicket_Success(t *testing.T) {
 			rec.Code)
 	}
 }
+
+func TestRegister_RejectsPrivilegedRole(t *testing.T) {
+	repo := &mockUserRepository{}
+	sessionMgr := auth.NewSessionManager()
+	handler := NewAuthHandler(repo, sessionMgr)
+
+	payload := models.UserOnboarding{
+		ID:              "ADM-TEST-001",
+		Surname:         "Admin",
+		FirstName:       "Test",
+		Email:           "admin-test@example.com",
+		Password:        "StrongPassword123!",
+		ConfirmPassword: "StrongPassword123!",
+		Role:            models.RoleAdmin,
+	}
+
+	body, err := json.Marshal(payload)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	req := httptest.NewRequest(
+		http.MethodPost,
+		"/api/v1/auth/register",
+		strings.NewReader(string(body)),
+	)
+	req.Header.Set("Content-Type", "application/json")
+
+	rec := httptest.NewRecorder()
+
+	handler.Register(rec, req)
+
+	res := rec.Result()
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusForbidden {
+		t.Fatalf("expected %d, got %d",
+			http.StatusForbidden,
+			res.StatusCode,
+		)
+	}
+}
+
+func TestRegister_StudentSuccess(t *testing.T) {
+	var createdUser *models.User
+
+	repo := &mockUserRepository{
+		findByIDFunc: func(string) (*models.User, error) {
+			return nil, errors.New("user not found")
+		},
+		findByEmailFunc: func(string) (*models.User, error) {
+			return nil, errors.New("user not found")
+		},
+		createFunc: func(user *models.User) error {
+			createdUser = user
+			return nil
+		},
+	}
+
+	sessionMgr := auth.NewSessionManager()
+	handler := NewAuthHandler(repo, sessionMgr)
+
+	payload := models.UserOnboarding{
+		ID:              "STU-TEST-001",
+		Surname:         "Student",
+		FirstName:       "Test",
+		Email:           "student-test@example.com",
+		Password:        "StrongPassword123!",
+		ConfirmPassword: "StrongPassword123!",
+		Role:            models.RoleStudent,
+	}
+
+	body, err := json.Marshal(payload)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	req := httptest.NewRequest(
+		http.MethodPost,
+		"/api/v1/auth/register",
+		strings.NewReader(string(body)),
+	)
+	req.Header.Set("Content-Type", "application/json")
+
+	rec := httptest.NewRecorder()
+
+	handler.Register(rec, req)
+
+	res := rec.Result()
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusCreated {
+		t.Fatalf("expected %d, got %d",
+			http.StatusCreated,
+			res.StatusCode,
+		)
+	}
+
+	if createdUser == nil {
+		t.Fatal("expected user to be created")
+	}
+
+	if createdUser.Role != models.RoleStudent {
+		t.Fatalf("expected student role, got %s", createdUser.Role)
+	}
+
+	if createdUser.PasswordHash == "" {
+		t.Fatal("expected password to be hashed")
+	}
+
+	if createdUser.PasswordHash == payload.Password {
+		t.Fatal("password must not be stored in plaintext")
+	}
+}
