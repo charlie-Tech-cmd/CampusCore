@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/lib/pq"
 )
 
 func TestNewAcademicService(t *testing.T) {
@@ -88,8 +89,7 @@ func TestRegisterCourse_CourseNotFound(t *testing.T) {
 
 	mock.ExpectBegin()
 
-	mock.ExpectQuery("SELECT credit_units, level, max_capacity, current_enrolled FROM courses").
-		WithArgs("CSC401").
+	mock.ExpectQuery(`SELECT\s+credit_units,\s+level,\s+max_capacity,\s+current_enrolled,\s+semester\s+FROM courses`).WithArgs("CSC401").
 		WillReturnError(sql.ErrNoRows)
 
 	mock.ExpectRollback()
@@ -127,14 +127,9 @@ func TestRegisterCourse_CourseFull(t *testing.T) {
 	mock.ExpectBegin()
 
 	rows := sqlmock.NewRows([]string{
-		"credit_units",
-		"level",
-		"max_capacity",
-		"current_enrolled",
-	}).AddRow(3, 400, 100, 100)
+		"credit_units", "level", "max_capacity", "current_enrolled", "semester"}).AddRow(3, 400, 100, 100, "First")
 
-	mock.ExpectQuery("SELECT credit_units, level, max_capacity, current_enrolled FROM courses").
-		WithArgs("CSC401").
+	mock.ExpectQuery(`SELECT\s+credit_units,\s+level,\s+max_capacity,\s+current_enrolled,\s+semester\s+FROM courses`).WithArgs("CSC401").
 		WillReturnRows(rows)
 
 	mock.ExpectRollback()
@@ -172,16 +167,9 @@ func TestRegisterCourse_InvalidStudent(t *testing.T) {
 	mock.ExpectBegin()
 
 	courseRows := sqlmock.NewRows([]string{
-		"credit_units",
-		"level",
-		"max_capacity",
-		"current_enrolled",
-	}).AddRow(3, 400, 100, 50)
+		"credit_units", "level", "max_capacity", "current_enrolled", "semester"}).AddRow(3, 400, 100, 50, "First")
 
-	mock.ExpectQuery(
-		"SELECT credit_units, level, max_capacity, current_enrolled FROM courses",
-	).
-		WithArgs("CSC401").
+	mock.ExpectQuery(`SELECT\s+credit_units,\s+level,\s+max_capacity,\s+current_enrolled,\s+semester\s+FROM courses`).WithArgs("CSC401").
 		WillReturnRows(courseRows)
 
 	mock.ExpectQuery(
@@ -225,15 +213,9 @@ func TestRegisterCourse_LevelRestriction(t *testing.T) {
 	mock.ExpectBegin()
 
 	courseRows := sqlmock.NewRows([]string{
-		"credit_units",
-		"level",
-		"max_capacity",
-		"current_enrolled",
-	}).AddRow(3, 400, 100, 50)
+		"credit_units", "level", "max_capacity", "current_enrolled", "semester"}).AddRow(3, 400, 100, 50, "First")
 
-	mock.ExpectQuery(
-		"SELECT credit_units, level, max_capacity, current_enrolled FROM courses",
-	).
+	mock.ExpectQuery(`SELECT\s+credit_units,\s+level,\s+max_capacity,\s+current_enrolled,\s+semester\s+FROM courses`).
 		WithArgs("CSC401").
 		WillReturnRows(courseRows)
 
@@ -282,15 +264,9 @@ func TestRegisterCourse_CreditLimitExceeded(t *testing.T) {
 
 	// Course exists
 	courseRows := sqlmock.NewRows([]string{
-		"credit_units",
-		"level",
-		"max_capacity",
-		"current_enrolled",
-	}).AddRow(3, 400, 100, 50)
+		"credit_units", "level", "max_capacity", "current_enrolled", "semester"}).AddRow(3, 400, 100, 50, "First")
 
-	mock.ExpectQuery(
-		"SELECT credit_units, level, max_capacity, current_enrolled FROM courses",
-	).
+	mock.ExpectQuery(`SELECT\s+credit_units,\s+level,\s+max_capacity,\s+current_enrolled,\s+semester\s+FROM courses`).
 		WithArgs("CSC401").
 		WillReturnRows(courseRows)
 
@@ -350,15 +326,9 @@ func TestRegisterCourse_PrerequisiteFailed(t *testing.T) {
 
 	// Course lookup
 	courseRows := sqlmock.NewRows([]string{
-		"credit_units",
-		"level",
-		"max_capacity",
-		"current_enrolled",
-	}).AddRow(3, 400, 100, 50)
+		"credit_units", "level", "max_capacity", "current_enrolled", "semester"}).AddRow(3, 400, 100, 50, "First")
 
-	mock.ExpectQuery(
-		"SELECT credit_units, level, max_capacity, current_enrolled FROM courses",
-	).
+	mock.ExpectQuery(`SELECT\s+credit_units,\s+level,\s+max_capacity,\s+current_enrolled,\s+semester\s+FROM courses`).
 		WithArgs("CSC401").
 		WillReturnRows(courseRows)
 
@@ -439,15 +409,9 @@ func TestRegisterCourse_InsertError(t *testing.T) {
 
 	// Course lookup
 	courseRows := sqlmock.NewRows([]string{
-		"credit_units",
-		"level",
-		"max_capacity",
-		"current_enrolled",
-	}).AddRow(3, 400, 100, 50)
+		"credit_units", "level", "max_capacity", "current_enrolled", "semester"}).AddRow(3, 400, 100, 50, "First")
 
-	mock.ExpectQuery(
-		"SELECT credit_units, level, max_capacity, current_enrolled FROM courses",
-	).
+	mock.ExpectQuery(`SELECT\s+credit_units,\s+level,\s+max_capacity,\s+current_enrolled,\s+semester\s+FROM courses`).
 		WithArgs("CSC401").
 		WillReturnRows(courseRows)
 
@@ -505,7 +469,7 @@ func TestRegisterCourse_InsertError(t *testing.T) {
 		t.Fatal("expected insert error")
 	}
 
-	expected := "failed to complete course registry insertion: insert failed"
+	expected := "failed to complete course registration: insert failed"
 
 	if err.Error() != expected {
 		t.Fatalf("expected %q, got %q", expected, err.Error())
@@ -529,15 +493,9 @@ func TestRegisterCourse_UpdateEnrollmentError(t *testing.T) {
 
 	// Course lookup
 	courseRows := sqlmock.NewRows([]string{
-		"credit_units",
-		"level",
-		"max_capacity",
-		"current_enrolled",
-	}).AddRow(3, 400, 100, 50)
+		"credit_units", "level", "max_capacity", "current_enrolled", "semester"}).AddRow(3, 400, 100, 50, "First")
 
-	mock.ExpectQuery(
-		"SELECT credit_units, level, max_capacity, current_enrolled FROM courses",
-	).
+	mock.ExpectQuery(`SELECT\s+credit_units,\s+level,\s+max_capacity,\s+current_enrolled,\s+semester\s+FROM courses`).
 		WithArgs("CSC401").
 		WillReturnRows(courseRows)
 
@@ -602,10 +560,11 @@ func TestRegisterCourse_UpdateEnrollmentError(t *testing.T) {
 		t.Fatal("expected update error")
 	}
 
-	if err.Error() != "update failed" {
-		t.Fatalf("expected %q, got %q", "update failed", err.Error())
-	}
+	expected := "failed to update course enrollment count: update failed"
 
+	if err.Error() != expected {
+		t.Fatalf("expected %q, got %q", expected, err.Error())
+	}
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Fatalf("unmet expectations: %v", err)
 	}
@@ -624,18 +583,13 @@ func TestRegisterCourse_Success(t *testing.T) {
 
 	// Course lookup
 	courseRows := sqlmock.NewRows([]string{
-		"credit_units",
-		"level",
-		"max_capacity",
-		"current_enrolled",
-	}).AddRow(3, 400, 100, 50)
+		"credit_units", "level", "max_capacity", "current_enrolled", "semester"}).AddRow(3, 400, 100, 50, "First")
 
 	mock.ExpectQuery(
-		"SELECT credit_units, level, max_capacity, current_enrolled FROM courses",
+		`SELECT\s+credit_units,\s+level,\s+max_capacity,\s+current_enrolled,\s+semester\s+FROM courses`,
 	).
 		WithArgs("CSC401").
 		WillReturnRows(courseRows)
-
 	// Student lookup
 	studentRows := sqlmock.NewRows([]string{"level"}).
 		AddRow(400)
@@ -715,16 +669,9 @@ func TestRegisterCourse_CommitError(t *testing.T) {
 
 	// Course lookup
 	courseRows := sqlmock.NewRows([]string{
-		"credit_units",
-		"level",
-		"max_capacity",
-		"current_enrolled",
-	}).AddRow(3, 400, 100, 50)
+		"credit_units", "level", "max_capacity", "current_enrolled", "semester"}).AddRow(3, 400, 100, 50, "First")
 
-	mock.ExpectQuery(
-		"SELECT credit_units, level, max_capacity, current_enrolled FROM courses",
-	).
-		WithArgs("CSC401").
+	mock.ExpectQuery(`SELECT\s+credit_units,\s+level,\s+max_capacity,\s+current_enrolled,\s+semester\s+FROM courses`).WithArgs("CSC401").
 		WillReturnRows(courseRows)
 
 	// Student lookup
@@ -810,8 +757,7 @@ func TestRegisterCourse_CourseQueryError(t *testing.T) {
 
 	mock.ExpectBegin()
 
-	mock.ExpectQuery("SELECT credit_units, level, max_capacity, current_enrolled FROM courses").
-		WithArgs("CSC401").
+	mock.ExpectQuery(`SELECT\s+credit_units,\s+level,\s+max_capacity,\s+current_enrolled,\s+semester\s+FROM courses`).WithArgs("CSC401").
 		WillReturnError(errors.New("database unavailable"))
 
 	mock.ExpectRollback()
@@ -848,12 +794,10 @@ func TestRegisterCourse_LoadQueryError(t *testing.T) {
 	mock.ExpectBegin()
 
 	// Course lookup succeeds
-	mock.ExpectQuery("SELECT credit_units, level, max_capacity, current_enrolled FROM courses").
-		WithArgs("CSC401").
+	mock.ExpectQuery(`SELECT\s+credit_units,\s+level,\s+max_capacity,\s+current_enrolled,\s+semester\s+FROM courses`).WithArgs("CSC401").
 		WillReturnRows(
 			sqlmock.NewRows([]string{
-				"credit_units", "level", "max_capacity", "current_enrolled",
-			}).AddRow(3, 400, 100, 10),
+				"credit_units", "level", "max_capacity", "current_enrolled", "semester"}).AddRow(3, 400, 100, 10, "First"),
 		)
 
 	// Student lookup succeeds
@@ -902,11 +846,9 @@ func TestRegisterCourse_PrerequisiteQueryError(t *testing.T) {
 	mock.ExpectBegin()
 
 	// Course lookup succeeds
-	mock.ExpectQuery("SELECT credit_units, level, max_capacity, current_enrolled FROM courses").
-		WithArgs("CSC401").
+	mock.ExpectQuery(`SELECT\s+credit_units,\s+level,\s+max_capacity,\s+current_enrolled,\s+semester\s+FROM courses`).WithArgs("CSC401").
 		WillReturnRows(sqlmock.NewRows([]string{
-			"credit_units", "level", "max_capacity", "current_enrolled",
-		}).AddRow(3, 400, 100, 10))
+			"credit_units", "level", "max_capacity", "current_enrolled", "semester"}).AddRow(3, 400, 100, 10, "First"))
 
 	// Student lookup succeeds
 	mock.ExpectQuery("SELECT level FROM users").
@@ -961,12 +903,11 @@ func TestRegisterCourse_PrerequisiteScanError(t *testing.T) {
 	mock.ExpectBegin()
 
 	// Course lookup
-	mock.ExpectQuery(`SELECT credit_units, level, max_capacity, current_enrolled FROM courses`).
+	mock.ExpectQuery(`SELECT\s+credit_units,\s+level,\s+max_capacity,\s+current_enrolled,\s+semester\s+FROM courses`).
 		WithArgs("CS101").
 		WillReturnRows(
 			sqlmock.NewRows([]string{
-				"credit_units", "level", "max_capacity", "current_enrolled",
-			}).AddRow(3, 100, 100, 20),
+				"credit_units", "level", "max_capacity", "current_enrolled", "semester"}).AddRow(3, 100, 100, 20, "First"),
 		)
 
 	// Student lookup
@@ -1023,12 +964,11 @@ func TestRegisterCourse_PrerequisiteCheckError(t *testing.T) {
 	mock.ExpectBegin()
 
 	// Course lookup
-	mock.ExpectQuery(`SELECT credit_units, level, max_capacity, current_enrolled FROM courses`).
+	mock.ExpectQuery(`SELECT\s+credit_units,\s+level,\s+max_capacity,\s+current_enrolled,\s+semester\s+FROM courses`).
 		WithArgs("CS101").
 		WillReturnRows(
 			sqlmock.NewRows([]string{
-				"credit_units", "level", "max_capacity", "current_enrolled",
-			}).AddRow(3, 100, 100, 20),
+				"credit_units", "level", "max_capacity", "current_enrolled", "semester"}).AddRow(3, 100, 100, 20, "First"),
 		)
 
 	// Student lookup
@@ -1074,5 +1014,159 @@ func TestRegisterCourse_PrerequisiteCheckError(t *testing.T) {
 
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestRegisterCourse_DuplicateRegistration(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("failed to create sqlmock: %v", err)
+	}
+	defer db.Close()
+
+	service := NewAcademicService(db)
+
+	mock.ExpectBegin()
+
+	// 1. Course lookup.
+	mock.ExpectQuery(`SELECT\s+credit_units,\s+level,\s+max_capacity,\s+current_enrolled,\s+semester\s+FROM courses`).WithArgs("CSC401").
+		WillReturnRows(
+			sqlmock.NewRows([]string{
+				"credit_units", "level", "max_capacity", "current_enrolled", "semester"}).AddRow(3, 400, 100, 50, "First"),
+		)
+
+	// 2. Student lookup.
+	mock.ExpectQuery(
+		"SELECT level FROM users",
+	).
+		WithArgs("STU001").
+		WillReturnRows(
+			sqlmock.NewRows([]string{
+				"level",
+			}).AddRow(400),
+		)
+
+	// 3. Current credit load.
+	mock.ExpectQuery(
+		"SELECT COALESCE\\(SUM\\(c.credit_units\\), 0\\)",
+	).
+		WithArgs(
+			"STU001",
+			"2025/2026",
+			"First",
+		).
+		WillReturnRows(
+			sqlmock.NewRows([]string{
+				"coalesce",
+			}).AddRow(0),
+		)
+
+	// 4. Prerequisite lookup.
+	mock.ExpectQuery(
+		"SELECT prerequisite_code FROM course_prerequisites",
+	).
+		WithArgs("CSC401").
+		WillReturnRows(
+			sqlmock.NewRows([]string{
+				"prerequisite_code",
+			}),
+		)
+
+	// 5. Registration INSERT fails because the
+	// student is already registered.
+	mock.ExpectExec(
+		"INSERT INTO student_courses",
+	).
+		WithArgs(
+			"STU001",
+			"CSC401",
+			"2025/2026",
+			"First",
+		).
+		WillReturnError(&pq.Error{
+			Code: "23505",
+		})
+
+	mock.ExpectRollback()
+
+	err = service.RegisterCourse(
+		"STU001",
+		"CSC401",
+		"2025/2026",
+		"First",
+	)
+
+	if err == nil {
+		t.Fatal("expected duplicate registration error")
+	}
+
+	expected := "course registration conflict: you are already registered for CSC401 for the 2025/2026 session"
+
+	if err.Error() != expected {
+		t.Fatalf(
+			"expected %q, got %q",
+			expected,
+			err.Error(),
+		)
+	}
+
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Fatalf(
+			"unmet sqlmock expectations: %v",
+			err,
+		)
+	}
+}
+
+func TestRegisterCourse_NullCourseSemester(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("failed to create sqlmock: %v", err)
+	}
+	defer db.Close()
+
+	service := NewAcademicService(db)
+
+	mock.ExpectBegin()
+
+	mock.ExpectQuery(
+		`SELECT\s+credit_units,\s+level,\s+max_capacity,\s+current_enrolled,\s+semester\s+FROM courses`,
+	).
+		WithArgs("CSC401").
+		WillReturnRows(
+			sqlmock.NewRows([]string{
+				"credit_units",
+				"level",
+				"max_capacity",
+				"current_enrolled",
+				"semester",
+			}).AddRow(3, 400, 100, 50, nil),
+		)
+
+	mock.ExpectRollback()
+
+	err = service.RegisterCourse(
+		"STU001",
+		"CSC401",
+		"2025/2026",
+		"First",
+	)
+
+	if err == nil {
+		t.Fatal("expected error for course with NULL semester")
+	}
+
+	expected := "academic rule violation: course CSC401 is not offered in the First semester"
+
+	if err.Error() != expected {
+		t.Fatalf(
+			"expected %q, got %q",
+			expected,
+			err.Error(),
+		)
+	}
+
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Fatalf("unmet sqlmock expectations: %v", err)
 	}
 }
