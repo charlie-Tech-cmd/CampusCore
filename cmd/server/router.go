@@ -160,11 +160,6 @@ func registerRoutes(
 		),
 	)
 
-	mux.HandleFunc(
-		"/students/register-course",
-		registrationHandler.RegisterCourse,
-	)
-
 	// Attendance
 	mux.Handle(
 		"/api/v1/attendance/mark",

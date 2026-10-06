@@ -64,6 +64,5 @@ func CurrentUserRole(r *http.Request) string {
 	if !ok || session == nil {
 		return ""
 	}
-
 	return session.Role
 }
