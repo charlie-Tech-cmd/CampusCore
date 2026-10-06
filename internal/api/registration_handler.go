@@ -23,6 +23,8 @@ type RegistrationService interface {
 	DropCourse(
 		studentID string,
 		courseCode string,
+		session string,
+		semester string,
 	) error
 }
 
@@ -55,14 +57,24 @@ func (h *RegistrationHandler) DropCourse(
 
 	courseCode := r.URL.Query().Get("course")
 
+	session := r.URL.Query().Get("session")
+	semester := r.URL.Query().Get("semester")
+
 	if courseCode == "" {
 		http.Error(w, "missing course code", http.StatusBadRequest)
+		return
+	}
+
+	if session == "" || semester == "" {
+		http.Error(w, "missing session or semester", http.StatusBadRequest)
 		return
 	}
 
 	err := h.service.DropCourse(
 		studentID,
 		courseCode,
+		session,
+		semester,
 	)
 
 	if err != nil {
