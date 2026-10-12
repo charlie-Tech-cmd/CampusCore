@@ -8,6 +8,7 @@ type Enrollment struct {
 	StudentID   string    `json:"student_id" db:"student_id"`
 	CourseCode  string    `json:"course_code" db:"course_code"`
 	CreditUnits int       `json:"credit_units" db:"credit_units"`
+	SessionID   int       `json:"session_id" db:"session_id"`
 	Session     string    `json:"session" db:"session"`
 	Semester    string    `json:"semester" db:"semester"`
 	Status      string    `json:"status" db:"status"`
@@ -20,6 +21,6 @@ type EnrollmentRepository interface {
 	Register(enrollment *Enrollment) error
 	FindByStudent(studentID string) ([]Enrollment, error)
 	FindByCourse(courseCode string) ([]Enrollment, error)
-	UpdateStatus(studentID, courseCode, status string) error
-	Delete(studentID, courseCode string) error
+	UpdateStatus(studentID, courseCode, session, semester, status string) error
+	Delete(studentID, courseCode, session, semester string) error
 }

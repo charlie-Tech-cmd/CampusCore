@@ -5,6 +5,12 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+
+	"github.com/lib/pq"
+)
+
+var ErrDuplicateEnrollment = errors.New(
+	"student is already registered for this course",
 )
 
 // PostgresEnrollmentRepository implements models.EnrollmentRepository.
@@ -18,14 +24,29 @@ func NewPostgresEnrollmentRepository(db *sql.DB) *PostgresEnrollmentRepository {
 }
 
 // Register registers a student for a course.
-func (r *PostgresEnrollmentRepository) Register(enrollment *models.Enrollment) error {
+func (r *PostgresEnrollmentRepository) Register(
+	enrollment *models.Enrollment,
+) error {
 	query := `
-		INSERT INTO student_courses
-		(student_id, course_code, session, semester, status)
-		VALUES ($1, $2, $3, $4, $5);
-	`
+        INSERT INTO student_courses (
+            student_id,
+            course_code,
+            session_id,
+            status
+        )
+        SELECT
+            $1,
+            $2,
+            id,
+            $5
+        FROM academic_sessions
+        WHERE session_name = $3
+          AND semester = $4
+          AND registration_open = true
+          AND is_active = true;
+    `
 
-	_, err := r.db.Exec(
+	result, err := r.db.Exec(
 		query,
 		enrollment.StudentID,
 		enrollment.CourseCode,
@@ -33,9 +54,30 @@ func (r *PostgresEnrollmentRepository) Register(enrollment *models.Enrollment) e
 		enrollment.Semester,
 		enrollment.Status,
 	)
-
 	if err != nil {
+		var pqErr *pq.Error
+
+		if errors.As(err, &pqErr) && pqErr.Code == "23505" {
+			return ErrDuplicateEnrollment
+		}
+
 		return fmt.Errorf("failed to register course: %w", err)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf(
+			"failed to verify course registration: %w",
+			err,
+		)
+	}
+
+	if rowsAffected == 0 {
+		return fmt.Errorf(
+			"academic session %s / %s is not active or registration is closed",
+			enrollment.Session,
+			enrollment.Semester,
+		)
 	}
 
 	return nil
@@ -44,18 +86,23 @@ func (r *PostgresEnrollmentRepository) Register(enrollment *models.Enrollment) e
 // FindByStudent returns every enrollment belonging to a student.
 func (r *PostgresEnrollmentRepository) FindByStudent(studentID string) ([]models.Enrollment, error) {
 	query := `
-		SELECT
-			id,
-			student_id,
-			course_code,
-			session,
-			semester,
-			status,
-			created_at,
-			updated_at
-		FROM student_courses
-		WHERE student_id = $1
-		ORDER BY created_at DESC;
+SELECT
+    sc.id,
+    sc.student_id,
+    sc.course_code,
+    c.credit_units,
+    sc.session_id,
+    asess.session_name,
+    asess.semester::text,
+    sc.status,
+    sc.registered_at
+			FROM student_courses sc
+		JOIN courses c
+			ON c.code = sc.course_code
+		JOIN academic_sessions asess
+			ON asess.id = sc.session_id
+		WHERE sc.student_id = $1
+		ORDER BY sc.registered_at DESC;
 	`
 
 	rows, err := r.db.Query(query, studentID)
@@ -73,15 +120,15 @@ func (r *PostgresEnrollmentRepository) FindByStudent(studentID string) ([]models
 			&e.ID,
 			&e.StudentID,
 			&e.CourseCode,
+			&e.CreditUnits,
+			&e.SessionID,
 			&e.Session,
 			&e.Semester,
 			&e.Status,
 			&e.CreatedAt,
-			&e.UpdatedAt,
 		); err != nil {
 			return nil, err
 		}
-
 		enrollments = append(enrollments, e)
 	}
 
@@ -91,17 +138,23 @@ func (r *PostgresEnrollmentRepository) FindByStudent(studentID string) ([]models
 // FindByCourse returns all students enrolled in a course.
 func (r *PostgresEnrollmentRepository) FindByCourse(courseCode string) ([]models.Enrollment, error) {
 	query := `
-		SELECT
-			id,
-			student_id,
-			course_code,
-			session,
-			semester,
-			status,
-			created_at,
-			updated_at
-		FROM student_courses
-		WHERE course_code = $1;
+SELECT
+    sc.id,
+    sc.student_id,
+    sc.course_code,
+    c.credit_units,
+    sc.session_id,
+    asess.session_name,
+    asess.semester::text,
+    sc.status,
+    sc.registered_at
+	FROM student_courses sc
+		JOIN courses c
+		ON c.code = sc.course_code
+		JOIN academic_sessions asess
+		ON asess.id = sc.session_id
+		WHERE sc.course_code = $1
+		ORDER BY sc.registered_at DESC;
 	`
 
 	rows, err := r.db.Query(query, courseCode)
@@ -119,15 +172,15 @@ func (r *PostgresEnrollmentRepository) FindByCourse(courseCode string) ([]models
 			&e.ID,
 			&e.StudentID,
 			&e.CourseCode,
+			&e.CreditUnits,
+			&e.SessionID,
 			&e.Session,
 			&e.Semester,
 			&e.Status,
 			&e.CreatedAt,
-			&e.UpdatedAt,
 		); err != nil {
 			return nil, err
 		}
-
 		enrollments = append(enrollments, e)
 	}
 
@@ -135,24 +188,39 @@ func (r *PostgresEnrollmentRepository) FindByCourse(courseCode string) ([]models
 }
 
 // UpdateStatus updates an enrollment status.
-func (r *PostgresEnrollmentRepository) UpdateStatus(studentID, courseCode, status string) error {
+
+func (r *PostgresEnrollmentRepository) UpdateStatus(
+	studentID, courseCode, session, semester, status string,
+) error {
 	query := `
 		UPDATE student_courses
-		SET status = $3
+		SET status = $5
 		WHERE student_id = $1
-		  AND course_code = $2;
+		  AND course_code = $2
+		  AND session_id = (
+		      SELECT id
+		      FROM academic_sessions
+		      WHERE session_name = $3
+		        AND semester = $4
+		  );
 	`
 
-	result, err := r.db.Exec(query, studentID, courseCode, status)
+	result, err := r.db.Exec(
+		query,
+		studentID,
+		courseCode,
+		session,
+		semester,
+		status,
+	)
 	if err != nil {
-		return err
+		return fmt.Errorf("update enrollment status: %w", err)
 	}
 
 	rows, err := result.RowsAffected()
 	if err != nil {
-		return err
+		return fmt.Errorf("check updated enrollment rows: %w", err)
 	}
-
 	if rows == 0 {
 		return errors.New("enrollment not found")
 	}
@@ -161,21 +229,41 @@ func (r *PostgresEnrollmentRepository) UpdateStatus(studentID, courseCode, statu
 }
 
 // Delete removes an enrollment.
-func (r *PostgresEnrollmentRepository) Delete(studentID, courseCode string) error {
+func (r *PostgresEnrollmentRepository) Delete(
+	studentID,
+	courseCode,
+	session,
+	semester string,
+) error {
 	query := `
-		DELETE FROM student_courses
-		WHERE student_id = $1
-		  AND course_code = $2;
-	`
+        DELETE FROM student_courses
+        WHERE student_id = $1
+          AND course_code = $2
+          AND session_id = (
+              SELECT id
+              FROM academic_sessions
+              WHERE session_name = $3
+                AND semester = $4
+          );
+    `
 
-	result, err := r.db.Exec(query, studentID, courseCode)
+	result, err := r.db.Exec(
+		query,
+		studentID,
+		courseCode,
+		session,
+		semester,
+	)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to delete enrollment: %w", err)
 	}
 
 	rows, err := result.RowsAffected()
 	if err != nil {
-		return err
+		return fmt.Errorf(
+			"failed to verify enrollment deletion: %w",
+			err,
+		)
 	}
 
 	if rows == 0 {

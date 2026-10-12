@@ -4,6 +4,7 @@ import (
 	"errors"
 
 	"campuscore/internal/models"
+	"campuscore/internal/repository"
 )
 
 const MaxSemesterCredits = 24
@@ -78,13 +79,16 @@ func (s *RegistrationService) RegisterCourse(
 		CreditUnits: course.CreditUnits,
 		Session:     session,
 		Semester:    semester,
-		Status:      "registered",
+		Status:      "approved",
 	}
 
 	if err := s.enrollments.Register(enrollment); err != nil {
+		if errors.Is(err, repository.ErrDuplicateEnrollment) {
+			return errors.New("student is already registered for this course")
+		}
+
 		return err
 	}
-
 	// Update course enrollment count.
 	course.CurrentEnrolled++
 
@@ -106,8 +110,9 @@ func (s *RegistrationService) GetStudentCourses(
 func (s *RegistrationService) DropCourse(
 	studentID string,
 	courseCode string,
+	session string,
+	semester string,
 ) error {
-
 	course, err := s.courses.FindByCode(courseCode)
 	if err != nil {
 		return err
@@ -116,6 +121,8 @@ func (s *RegistrationService) DropCourse(
 	if err := s.enrollments.Delete(
 		studentID,
 		courseCode,
+		session,
+		semester,
 	); err != nil {
 		return err
 	}
