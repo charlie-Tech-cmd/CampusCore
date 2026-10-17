@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"campuscore/internal/middleware"
 	"campuscore/internal/models"
 	"campuscore/internal/services"
 )
@@ -116,6 +117,22 @@ func (h *AttendanceHandler) ListStudentAttendance(
 	}
 
 	studentID := r.URL.Query().Get("student_id")
+
+	if middleware.CurrentUserRole(r) == "student" {
+		authenticatedStudentID := middleware.CurrentUserID(r)
+
+		if authenticatedStudentID == "" {
+			http.Error(w, "unauthorized", http.StatusUnauthorized)
+			return
+		}
+
+		if studentID == "" {
+			studentID = authenticatedStudentID
+		} else if studentID != authenticatedStudentID {
+			http.Error(w, "forbidden", http.StatusForbidden)
+			return
+		}
+	}
 
 	records, err := h.service.ListStudentAttendance(studentID)
 	if err != nil {
