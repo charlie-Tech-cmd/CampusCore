@@ -3,6 +3,7 @@ package config
 import (
 	"errors"
 	"fmt"
+	"strings"
 )
 
 // Validate ensures the application configuration is valid before startup.
@@ -75,8 +76,16 @@ func Validate(cfg *Config) error {
 	// Authentication
 	// ------------------------------------------------------------------
 
-	if cfg.Auth.JWTSecret == "" {
+	if strings.TrimSpace(cfg.Auth.JWTSecret) == "" {
 		return errors.New("JWT secret cannot be empty")
+	}
+
+	if strings.TrimSpace(cfg.Auth.JWTSecret) == "change-me-before-production" {
+		return errors.New("JWT secret must not use the default placeholder")
+	}
+
+	if len([]byte(cfg.Auth.JWTSecret)) < 32 {
+		return errors.New("JWT secret must be at least 32 bytes")
 	}
 
 	if cfg.Auth.AccessTokenExpiry <= 0 {
