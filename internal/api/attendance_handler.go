@@ -76,6 +76,25 @@ func (h *AttendanceHandler) GetAttendance(
 		return
 	}
 
+	if record == nil {
+		http.Error(w, "Attendance record not found", http.StatusNotFound)
+		return
+	}
+
+	if middleware.CurrentUserRole(r) == "student" {
+		userID := middleware.CurrentUserID(r)
+
+		if userID == "" {
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
+		}
+
+		if record.StudentID != userID {
+			http.Error(w, "Forbidden", http.StatusForbidden)
+			return
+		}
+	}
+
 	w.Header().Set("Content-Type", "application/json")
 
 	if err := json.NewEncoder(w).Encode(record); err != nil {
