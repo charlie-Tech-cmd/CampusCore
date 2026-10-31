@@ -31,12 +31,17 @@ func main() {
 
 	// Build the HTTP server and background workers.
 	server, worker := newServer(dbContainer.Pool, cfg.Server)
-	// Ensure background workers shut down gracefully.
-	defer worker.Stop(context.Background())
 
-	// Start serving requests.
-	startServer(server)
+	// Stop the worker with a bounded deadline before closing the database.
+	defer func() {
+		ctx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
+		defer cancel()
+		worker.Stop(ctx)
+	}()
 
-	// Wait until the application receives a shutdown signal.
-	waitForShutdown(server)
+	// Start serving requests and retain any unexpected listener error.
+	serverErrors := startServer(server)
+
+	// Wait until a shutdown signal or an unexpected server error occurs.
+	waitForShutdown(server, serverErrors)
 }
